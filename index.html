@@ -1,23 +1,95 @@
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SaveYourShoes POS</title>
+    <!-- Tailwind CSS untuk styling cepat -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center h-screen">
 
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
-    authDomain: "saveyourshoes-pos.firebaseapp.com",
-    projectId: "saveyourshoes-pos",
-    storageBucket: "saveyourshoes-pos.firebasestorage.app",
-    messagingSenderId: "414855345556",
-    appId: "1:414855345556:web:f049e8b69ae9aef3068b81",
-    measurementId: "G-6NR90WMFWV"
-  };
+    <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
+        <h2 class="text-2xl font-bold mb-6 text-center text-slate-800">SaveYourShoes POS</h2>
+        
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Email</label>
+                <input type="email" id="email" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Password</label>
+                <input type="password" id="password" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Masuk</button>
+        </form>
+        
+        <p id="error-msg" class="text-red-500 text-sm mt-4 text-center hidden"></p>
+    </div>
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-</script>
+    <!-- Firebase SDK (CDN) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Ganti konfigurasi di bawah ini dengan firebaseConfig milik Anda
+        const firebaseConfig = {
+            apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+            authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+            projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+            storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
+            messagingSenderId: "GANTI_DENGAN_MESSAGING_SENDER_ID_ANDA",
+            appId: "GANTI_DENGAN_APP_ID_ANDA"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const loginForm = document.getElementById('login-form');
+        const errorMsg = document.getElementById('error-msg');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            errorMsg.classList.add('hidden');
+
+            try {
+                // 1. Proses Login Authentication
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // 2. Ambil data role dari Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const role = userData.role;
+
+                    // 3. Alihkan halaman berdasarkan role
+                    if (role === 'admin') {
+                        alert("Login Berhasil sebagai Admin!");
+                        // window.location.href = "admin.html"; // Nanti kita buat file admin.html
+                    } else if (role === 'cashier') {
+                        alert("Login Berhasil sebagai Kasir!");
+                        // window.location.href = "cashier.html"; // Nanti kita buat file cashier.html
+                    } else {
+                        errorMsg.textContent = "Role pengguna tidak valid!";
+                        errorMsg.classList.remove('hidden');
+                    }
+                } else {
+                    errorMsg.textContent = "Data hak akses (role) tidak ditemukan di database!";
+                    errorMsg.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                errorMsg.textContent = "Gagal login: " + error.message;
+                errorMsg.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
