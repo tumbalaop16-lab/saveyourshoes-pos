@@ -41,7 +41,7 @@
         <!-- Tabel Riwayat Transaksi -->
         <div class="bg-white p-5 rounded-xl shadow-md">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
-                <h3 class="text-md font-bold text-slate-800">Riwayat & Laporan Transaksi Masuk</h3>
+                <h3 class="text-md font-bold text-slate-800">Riwayat & Status Cucian Pelanggan</h3>
                 <button onclick="loadTransactions()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">🔄 Muat Ulang Data</button>
             </div>
             
@@ -53,9 +53,9 @@
                             <th class="p-2 border">Waktu</th>
                             <th class="p-2 border">Pelanggan</th>
                             <th class="p-2 border">Detail Pesanan</th>
-                            <th class="p-2 border">Total</th>
-                            <th class="p-2 border">Status</th>
-                            <th class="p-2 border">Kasir</th>
+                            <th class="p-2 border">Total & Sisa</th>
+                            <th class="p-2 border text-center">Status Pembayaran</th>
+                            <th class="p-2 border text-center">Aksi / Ubah Status</th>
                         </tr>
                     </thead>
                     <tbody id="transaction-table-body">
@@ -72,7 +72,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
@@ -89,7 +89,7 @@
 
         // Auth Protection khusus Admin
         onAuthStateChanged(auth, async (user) => {
-            if (user) {
+            if (user) { pelacakRole:
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists() && userDoc.data().role === 'admin') {
                     document.getElementById('admin-email').textContent = user.email;
@@ -127,14 +127,20 @@
 
                 querySnapshot.forEach((docSnap) => {
                     const data = docSnap.data();
+                    const docId = docSnap.id;
                     totalRevenue += (data.totalAmount || 0);
                     totalCount++;
 
                     const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString('id-ID') : 'Baru saja';
                     const itemsSummary = (data.items || []).map(i => `• ${i.category}: ${i.service} (${i.brand})`).join('<br>');
-                    const statusBadge = data.paymentStatus === 'LUNAS' 
-                        ? `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>` 
-                        : `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP / BELUM</span>`;
+                    
+                    // Format Badge Status
+                    let statusBadge = "";
+                    if (data.paymentStatus === 'LUNAS') {
+                        statusBadge = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>`;
+                    } else {
+                        statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP (Sisa: Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')})</span>`;
+                    }
 
                     rowsHtml += `
                         <tr class="border-b hover:bg-slate-50">
@@ -143,8 +149,11 @@
                             <td class="p-2 font-medium">${data.customerName}<br><span class="text-slate-400 text-[10px]">${data.customerPhone}</span></td>
                             <td class="p-2">${itemsSummary}</td>
                             <td class="p-2 font-bold text-emerald-600">Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</td>
-                            <td class="p-2">${statusBadge}</td>
-                            <td class="p-2 text-slate-500">${(data.cashier || 'Kasir').split('@')[0]}</td>
+                            <td class="p-2 text-center">${statusBadge}</td>
+                            <td class="p-2 text-center space-y-1">
+                                <button onclick="updateStatus('${docId}', 'LUNAS')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Lunas</button>
+                                <button onclick="updateStatus('${docId}', 'DIAMBIL')" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Diambil</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -157,7 +166,32 @@
                 console.error("Gagal memuat laporan:", err);
                 tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat data dari database.</td></tr>`;
             }
-        }
+        };
+
+        // Fungsi Mengubah Status Pembayaran / Pengambilan di Firestore
+        window.updateStatus = async function(docId, newStatus) {
+            const confirmMsg = newStatus === 'LUNAS' ? "Ubah status transaksi ini menjadi LUNAS?" : "Tandai cucian ini sudah DIAMBIL oleh pelanggan?";
+            if (!confirm(confirmMsg)) return;
+
+            try {
+                const docRef = doc(db, "transactions", docId);
+                if (newStatus === 'LUNAS') {
+                    await updateDoc(docRef, {
+                        paymentStatus: "LUNAS",
+                        remainingAmount: 0
+                    });
+                } else if (newStatus === 'DIAMBIL') {
+                    await updateDoc(docRef, {
+                        paymentStatus: "SELESAI & DIAMBIL"
+                    });
+                }
+                alert("Status berhasil diperbarui!");
+                loadTransactions(); // Refresh tabel
+            } catch (err) {
+                console.error("Gagal update status:", err);
+                alert("Terjadi kesalahan saat memperbarui status.");
+            }
+        };
     </script>
 </body>
 </html>
