@@ -5,107 +5,193 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kasir - SaveYourShoes POS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* CSS khusus cetak Struk Thermal 58mm */
+        @media print {
+            body * { visibility: hidden; }
+            #receipt-print, #receipt-print * { visibility: visible; }
+            #receipt-print {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 58mm;
+                font-family: monospace;
+                font-size: 11px;
+                padding: 4px;
+                color: black;
+            }
+            .no-print { display: none !important; }
+        }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col">
 
     <!-- Navbar Kasir -->
-    <nav class="bg-emerald-600 text-white px-6 py-4 flex justify-between items-center shadow-md">
-        <h1 class="text-xl font-bold">SaveYourShoes POS - Panel Kasir</h1>
-        <button id="logout-btn" class="bg-red-500 px-4 py-2 rounded-lg hover:bg-red-600 transition text-sm">Keluar (Logout)</button>
+    <nav class="bg-emerald-600 text-white px-6 py-4 flex justify-between items-center shadow-md no-print">
+        <h1 class="text-xl font-bold">SaveYourShoes POS</h1>
+        <button id="logout-btn" class="bg-red-500 px-3 py-1.5 rounded-lg hover:bg-red-600 transition text-sm">Keluar</button>
     </nav>
 
     <!-- Konten Utama -->
-    <main class="flex-1 p-6 max-w-6xl w-full mx-auto">
-        <div class="bg-white p-6 rounded-xl shadow-md mb-6">
-            <h2 class="text-2xl font-semibold text-slate-800 mb-2">Selamat Datang, Kasir!</h2>
-            <p class="text-slate-600">Catat transaksi dan layanan cuci sepatu, tas, atau perawatan lainnya di sini.</p>
-            <p class="text-sm text-emerald-600 font-medium mt-1" id="user-email"></p>
+    <main class="flex-1 p-4 md:p-6 max-w-6xl w-full mx-auto no-print">
+        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
+            <div>
+                <h2 class="text-xl font-bold text-slate-800">Input Transaksi Kasir</h2>
+                <p class="text-xs text-emerald-600 font-medium" id="user-email"></p>
+            </div>
+            <button onclick="window.print()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-slate-900">Test Print Struk</button>
         </div>
 
-        <!-- Area Transaksi / POS -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Form Input Transaksi -->
-            <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Input Transaksi Baru</h3>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Form Input & Keranjang -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Data Pelanggan -->
+                <div class="bg-white p-5 rounded-xl shadow-md">
+                    <h3 class="text-md font-bold text-slate-800 mb-3 border-b pb-2">1. Data Pelanggan</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">Nama Pelanggan</label>
+                            <input type="text" id="cust-name" placeholder="Nama Pelanggan" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 mb-1">No. WhatsApp</label>
+                            <input type="tel" id="cust-phone" placeholder="08xxxxxxxxxx" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tambah Item Berdasarkan Kategori -->
+                <div class="bg-white p-5 rounded-xl shadow-md">
+                    <h3 class="text-md font-bold text-slate-800 mb-3 border-b pb-2">2. Tambah Item Pesanan</h3>
+                    
+                    <!-- Kategori Selector -->
+                    <div class="flex gap-2 mb-4">
+                        <button type="button" onclick="switchCategory('SHOES')" id="tab-shoes" class="flex-1 py-2 text-xs font-bold rounded-lg border bg-emerald-600 text-white">SHOES</button>
+                        <button type="button" onclick="switchCategory('BAG')" id="tab-bag" class="flex-1 py-2 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600">BAG</button>
+                        <button type="button" onclick="switchCategory('OTHERS')" id="tab-others" class="flex-1 py-2 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600">OTHERS</button>
+                    </div>
+
+                    <!-- Dynamic Form Item -->
+                    <form id="add-item-form" class="space-y-3">
+                        <div id="identitas-container" class="grid grid-cols-3 gap-2">
+                            <!-- Field identitas berubah sesuai kategori -->
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Layanan / Treatment</label>
+                                <select id="item-service" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                                    <!-- Terisi via Javascript -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-600 mb-1">Harga Khusus / Promo (Rp)</label>
+                                <input type="number" id="item-price-override" placeholder="Kosongkan jika harga normal" class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
+                                <span class="text-[10px] text-slate-400">*Isi 0 untuk promo Gratis Cuci</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-slate-800 text-white py-2 rounded-lg text-xs font-semibold hover:bg-slate-900 transition">+ Tambah Ke Daftar Pesanan</button>
+                    </form>
+                </div>
+
+                <!-- Daftar Keranjang Pesanan -->
+                <div class="bg-white p-5 rounded-xl shadow-md">
+                    <h3 class="text-md font-bold text-slate-800 mb-3 border-b pb-2">Daftar Item Pesanan</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead>
+                                <tr class="bg-slate-100 text-slate-600">
+                                    <th class="p-2 border">Kategori</th>
+                                    <th class="p-2 border">Detail Item</th>
+                                    <th class="p-2 border">Layanan</th>
+                                    <th class="p-2 border">Harga</th>
+                                    <th class="p-2 border text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="cart-table-body">
+                                <tr>
+                                    <td colspan="5" class="p-3 text-center text-slate-400">Belum ada item ditambahkan.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ringkasan & Pembayaran -->
+            <div class="bg-white p-5 rounded-xl shadow-md flex flex-col justify-between h-fit space-y-4">
+                <h3 class="text-md font-bold text-slate-800 border-b pb-2">3. Pembayaran & Simpan</h3>
                 
-                <form id="transaction-form" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Nama Pelanggan</label>
-                        <input type="text" id="cust-name" placeholder="Masukkan nama pelanggan" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between font-bold text-base border-b pb-2">
+                        <span>Total Tagihan:</span>
+                        <span id="grand-total-text" class="text-emerald-600">Rp 0</span>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Nomor WhatsApp</label>
-                        <input type="tel" id="cust-phone" placeholder="08xxxxxxxxxx" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Pilih Layanan Treatment</label>
-                        <select id="service-select" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                            <option value="">-- Pilih Layanan --</option>
-                            
-                            <!-- SHOES -->
-                            <optgroup label="*SHOES*">
-                                <option value="Fastclean|25000">Fastclean - Rp 25.000</option>
-                                <option value="One Day Wash|80000">One Day Wash - Rp 80.000</option>
-                                <option value="Cuci Sendal|25000">Cuci Sendal - Rp 25.000</option>
-                                <option value="Cuci Sepatu Anak|25000">Cuci Sepatu Anak - Rp 25.000</option>
-                                <option value="Cuci Sepatu Wanita|40000">Cuci Sepatu Wanita - Rp 40.000</option>
-                                <option value="Cuci Sepatu Pria|45000">Cuci Sepatu Pria - Rp 45.000</option>
-                                <option value="Whitening Upper|60000">Whitening Upper - Rp 60.000</option>
-                                <option value="Unyellowing Midsole|70000">Unyellowing Midsole - Rp 70.000</option>
-                                <option value="Repaint Midsole|80000">Repaint Midsole - Rp 80.000</option>
-                                <option value="Reglue|120000">Reglue - Rp 120.000</option>
-                                <option value="Reparasi Shoes|100000">Reparasi Shoes - Rp 100.000</option>
-                                <option value="Repaint Upper|150000">Repaint Upper - Rp 150.000</option>
-                                <option value="Ganti Sole|250000">Ganti Sole - Rp 250.000</option>
-                            </optgroup>
 
-                            <!-- BAG -->
-                            <optgroup label="*BAG*">
-                                <option value="Cuci Tas|50000">Cuci Tas - Rp 50.000</option>
-                                <option value="Ganti Accessories Tas|70000">Ganti Accessories Tas - Rp 70.000</option>
-                                <option value="Repaint Tas|150000">Repaint Tas - Rp 150.000</option>
-                                <option value="Ganti Tali/Handel|150000">Ganti Tali/Handel - Rp 150.000</option>
-                                <option value="Recover Dompet|250000">Recover Dompet - Rp 250.000</option>
-                                <option value="Recover Tas|300000">Recover Tas - Rp 300.000</option>
-                            </optgroup>
-
-                            <!-- OTHERS -->
-                            <optgroup label="*OTHERS*">
-                                <option value="Cuci Helm|40000">Cuci Helm - Rp 40.000</option>
-                                <option value="Cuci Jaket|70000">Cuci Jaket - Rp 70.000</option>
-                                <option value="Custom Sepatu|150000">Custom Sepatu - Mulai Rp 150.000</option>
-                                <option value="Custom Jaket|150000">Custom Jaket - Mulai Rp 150.000</option>
-                                <option value="Custom Denim|150000">Custom Denim - Mulai Rp 150.000</option>
-                            </optgroup>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Metode Pembayaran</label>
+                        <select id="pay-method" class="w-full px-3 py-2 border rounded-lg text-sm">
+                            <option value="Cash">Cash / Tunai</option>
+                            <option value="QRIS">QRIS</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Catatan Tambahan (Opsional)</label>
-                        <input type="text" id="cust-note" placeholder="Misal: Warna hitam, sepatu cepat selesai" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Jumlah Dibayar (DP / Lunas)</label>
+                        <input type="number" id="pay-amount" placeholder="0" class="w-full px-3 py-2 border rounded-lg text-sm">
                     </div>
 
-                    <button type="submit" id="submit-btn" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition">
-                        Simpan & Masukkan ke Database
-                    </button>
-                </form>
-                <p id="form-msg" class="text-sm mt-3 text-center hidden"></p>
-            </div>
+                    <div class="flex justify-between font-medium text-xs text-slate-600 pt-1">
+                        <span>Sisa Pembayaran:</span>
+                        <span id="remaining-amount-text" class="text-red-500 font-bold">Rp 0</span>
+                    </div>
 
-            <!-- Ringkasan Kasir -->
-            <div class="bg-white p-6 rounded-xl shadow-md flex flex-col justify-between">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Status Kasir</h3>
-                    <div class="bg-emerald-50 text-emerald-800 p-4 rounded-lg text-sm mb-4">
-                        <p class="font-semibold">Sistem Terhubung</p>
-                        <p class="text-xs text-emerald-600 mt-1">Data transaksi yang disimpan akan langsung masuk secara realtime ke database cloud Firestore.</p>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 mb-1">Catatan Tambahan Nota</label>
+                        <input type="text" id="order-note" placeholder="Misal: Ambil tgl 5 Nov" class="w-full px-3 py-2 border rounded-lg text-sm">
                     </div>
                 </div>
+
+                <button type="button" id="submit-order-btn" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold hover:bg-emerald-700 transition text-sm">
+                    Simpan & Cetak Struk
+                </button>
             </div>
         </div>
     </main>
 
-    <!-- Script Logika, Auth & Firestore -->
+    <!-- Template Struk Thermal 58mm (Tersembunyi di Layar, Tampak saat Print) -->
+    <div id="receipt-print" class="hidden print:block">
+        <div style="text-align: center;">
+            <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
+            <span style="font-size: 9px;">Kediri & Malang</span><br>
+            --------------------------------
+        </div>
+        <div style="font-size: 10px; margin-top: 4px;">
+            Tanggal: <span id="rec-date"></span><br>
+            Pelanggan: <span id="rec-cust"></span> (<span id="rec-phone"></span>)<br>
+            Kasir: <span id="rec-cashier"></span><br>
+            --------------------------------
+        </div>
+        <div style="font-size: 10px;">
+            <b>DETAIL PESANAN:</b>
+            <div id="rec-items"></div>
+            --------------------------------
+        </div>
+        <div style="font-size: 10px;">
+            Total  : <span id="rec-total"></span><br>
+            Bayar  : <span id="rec-pay"></span> (<span id="rec-method"></span>)<br>
+            Sisa   : <span id="rec-rem"></span><br>
+            Status : <span id="rec-status"></span><br>
+            --------------------------------
+        </div>
+        <div style="text-align: center; font-size: 9px; margin-top: 6px;">
+            Terima kasih atas kepercayaannya!<br>
+            Simpan struk ini saat pengambilan.
+        </div>
+    </div>
+
+    <!-- Script Logika App & Firestore -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
@@ -125,8 +211,44 @@
         const db = getFirestore(app);
 
         let activeUserEmail = "";
+        let currentCategory = "SHOES";
+        let cart = [];
 
-        // Proteksi Halaman Kasir
+        // Database Menu
+        const menuData = {
+            SHOES: [
+                { name: "Fastclean", price: 25000 },
+                { name: "One Day Wash", price: 80000 },
+                { name: "Cuci Sendal", price: 25000 },
+                { name: "Cuci Sepatu Anak", price: 25000 },
+                { name: "Cuci Sepatu Wanita", price: 40000 },
+                { name: "Cuci Sepatu Pria", price: 45000 },
+                { name: "Whitening Upper", price: 60000 },
+                { name: "Unyellowing Midsole", price: 70000 },
+                { name: "Repaint Midsole", price: 80000 },
+                { name: "Reglue", price: 120000 },
+                { name: "Reparasi Shoes", price: 100000 },
+                { name: "Repaint Upper", price: 150000 },
+                { name: "Ganti Sole", price: 250000 }
+            ],
+            BAG: [
+                { name: "Cuci Tas", price: 50000 },
+                { name: "Ganti Accessories Tas", price: 70000 },
+                { name: "Repaint Tas", price: 150000 },
+                { name: "Ganti Tali/Handel", price: 150000 },
+                { name: "Recover Dompet", price: 250000 },
+                { name: "Recover Tas", price: 300000 }
+            ],
+            OTHERS: [
+                { name: "Cuci Helm", price: 40000 },
+                { name: "Cuci Jaket", price: 70000 },
+                { name: "Custom Sepatu", price: 150000 },
+                { name: "Custom Jaket", price: 150000 },
+                { name: "Custom Denim", price: 150000 }
+            ]
+        };
+
+        // Auth Protection
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -134,7 +256,6 @@
                     activeUserEmail = user.email;
                     document.getElementById('user-email').textContent = "Kasir Aktif: " + user.email;
                 } else {
-                    alert("Akses ditolak! Anda tidak memiliki hak akses kasir.");
                     window.location.href = "index.html";
                 }
             } else {
@@ -142,65 +263,199 @@
             }
         });
 
-        // Tombol Logout
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth).then(() => {
-                window.location.href = "index.html";
-            }).catch((error) => {
-                console.error("Gagal logout:", error);
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth).then(() => window.location.href = "index.html"));
+
+        // Switch Tab Kategori
+        window.switchCategory = function(cat) {
+            currentCategory = cat;
+            ['shoes', 'bag', 'others'].forEach(c => {
+                const btn = document.getElementById(`tab-${c}`);
+                if (c.toUpperCase() === cat) {
+                    btn.className = "flex-1 py-2 text-xs font-bold rounded-lg border bg-emerald-600 text-white";
+                } else {
+                    btn.className = "flex-1 py-2 text-xs font-bold rounded-lg border bg-slate-100 text-slate-600";
+                }
             });
+            renderItemForm();
+        };
+
+        function renderItemForm() {
+            const identitasContainer = document.getElementById('identitas-container');
+            const selectService = document.getElementById('item-service');
+
+            if (currentCategory === "SHOES") {
+                identitasContainer.innerHTML = `
+                    <input type="text" id="item-brand" placeholder="Merk (Misal: Nike)" required class="px-3 py-2 border rounded-lg text-sm">
+                    <input type="text" id="item-size" placeholder="Size (39, 42)" required class="px-3 py-2 border rounded-lg text-sm">
+                    <input type="text" id="item-color" placeholder="Warna (Hitam)" required class="px-3 py-2 border rounded-lg text-sm">
+                `;
+            } else if (currentCategory === "BAG") {
+                identitasContainer.innerHTML = `
+                    <input type="text" id="item-brand" placeholder="Merk / Jenis Tas" required class="col-span-2 px-3 py-2 border rounded-lg text-sm">
+                    <input type="text" id="item-color" placeholder="Warna" required class="px-3 py-2 border rounded-lg text-sm">
+                `;
+            } else {
+                identitasContainer.innerHTML = `
+                    <input type="text" id="item-brand" placeholder="Nama Barang (Helm, Jaket)" required class="col-span-2 px-3 py-2 border rounded-lg text-sm">
+                    <input type="text" id="item-color" placeholder="Warna" required class="px-3 py-2 border rounded-lg text-sm">
+                `;
+            }
+
+            selectService.innerHTML = menuData[currentCategory].map(item => 
+                `<option value="${item.name}|${item.price}">${item.name} - Rp ${item.price.toLocaleString('id-ID')}</option>`
+            ).join('');
+        }
+
+        renderItemForm();
+
+        // Add Item to Cart
+        document.getElementById('add-item-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const brand = document.getElementById('item-brand').value.trim();
+            const color = document.getElementById('item-color').value.trim();
+            const size = document.getElementById('item-size') ? document.getElementById('item-size').value.trim() : '-';
+            
+            const [serviceName, defaultPrice] = document.getElementById('item-service').value.split('|');
+            const overridePriceInput = document.getElementById('item-price-override').value;
+            
+            const finalPrice = overridePriceInput !== "" ? Number(overridePriceInput) : Number(defaultPrice);
+
+            cart.push({
+                category: currentCategory,
+                brand,
+                size,
+                color,
+                service: serviceName,
+                price: finalPrice
+            });
+
+            document.getElementById('add-item-form').reset();
+            renderItemForm();
+            renderCart();
         });
 
-        // Proses Simpan Transaksi ke Firestore
-        const transactionForm = document.getElementById('transaction-form');
-        const formMsg = document.getElementById('form-msg');
-
-        transactionForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const name = document.getElementById('cust-name').value.trim();
-            const phone = document.getElementById('cust-phone').value.trim();
-            const serviceValue = document.getElementById('service-select').value;
-            const note = document.getElementById('cust-note').value.trim();
-
-            if (!serviceValue) {
-                alert("Silakan pilih jenis layanan terlebih dahulu!");
+        function renderCart() {
+            const tbody = document.getElementById('cart-table-body');
+            if (cart.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-3 text-center text-slate-400">Belum ada item ditambahkan.</td></tr>`;
+                document.getElementById('grand-total-text').textContent = "Rp 0";
+                calculatePayment();
                 return;
             }
 
-            const [serviceName, servicePrice] = serviceValue.split('|');
+            let grandTotal = 0;
+            tbody.innerHTML = cart.map((item, index) => {
+                grandTotal += item.price;
+                const detailText = item.category === 'SHOES' ? `${item.brand} (${item.color}, Sz ${item.size})` : `${item.brand} (${item.color})`;
+                return `
+                    <tr class="border-b">
+                        <td class="p-2 font-semibold">${item.category}</td>
+                        <td class="p-2">${detailText}</td>
+                        <td class="p-2">${item.service}</td>
+                        <td class="p-2 font-bold text-emerald-600">Rp ${item.price.toLocaleString('id-ID')}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="removeItem(${index})" class="text-red-500 hover:text-red-700 font-bold">X</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
 
-            formMsg.textContent = "Menyimpan transaksi...";
-            formMsg.className = "text-sm mt-3 text-center text-blue-600 font-medium";
-            formMsg.classList.remove('hidden');
+            document.getElementById('grand-total-text').textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+            calculatePayment();
+        }
+
+        window.removeItem = function(index) {
+            cart.splice(index, 1);
+            renderCart();
+        };
+
+        const payInput = document.getElementById('pay-amount');
+        payInput.addEventListener('input', calculatePayment);
+
+        function calculatePayment() {
+            const grandTotal = cart.reduce((sum, i) => sum + i.price, 0);
+            const payAmount = Number(payInput.value) || 0;
+            const remaining = grandTotal - payAmount;
+            
+            const remElement = document.getElementById('remaining-amount-text');
+            remElement.textContent = `Rp ${(remaining > 0 ? remaining : 0).toLocaleString('id-ID')}`;
+            remElement.className = remaining > 0 ? "text-red-500 font-bold" : "text-emerald-600 font-bold";
+        }
+
+        // Submit Order & Print
+        document.getElementById('submit-order-btn').addEventListener('click', async () => {
+            const custName = document.getElementById('cust-name').value.trim();
+            const custPhone = document.getElementById('cust-phone').value.trim();
+            const payMethod = document.getElementById('pay-method').value;
+            const payAmount = Number(payInput.value) || 0;
+            const note = document.getElementById('order-note').value.trim();
+
+            if (!custName || !custPhone) {
+                alert("Harap isi Nama dan Nomor WhatsApp Pelanggan!");
+                return;
+            }
+            if (cart.length === 0) {
+                alert("Keranjang pesanan masih kosong!");
+                return;
+            }
+
+            const grandTotal = cart.reduce((sum, i) => sum + i.price, 0);
+            const remaining = grandTotal - payAmount;
+            const paymentStatus = remaining <= 0 ? "LUNAS" : "BELUM LUNAS (DP)";
+
+            const btn = document.getElementById('submit-order-btn');
+            btn.disabled = true;
+            btn.textContent = "Menyimpan...";
 
             try {
-                // Simpan ke koleksi 'transactions' di Firestore
+                // Simpan ke Firestore
                 await addDoc(collection(db, "transactions"), {
-                    customerName: name,
-                    customerPhone: phone,
-                    service: serviceName,
-                    price: Number(servicePrice),
+                    customerName: custName,
+                    customerPhone: custPhone,
+                    items: cart,
+                    totalAmount: grandTotal,
+                    paidAmount: payAmount,
+                    remainingAmount: remaining > 0 ? remaining : 0,
+                    paymentMethod: payMethod,
+                    paymentStatus: paymentStatus,
                     note: note,
                     cashier: activeUserEmail,
-                    status: "Pending",
                     createdAt: serverTimestamp()
                 });
 
-                formMsg.textContent = "Berhasil! Transaksi tersimpan ke database.";
-                formMsg.className = "text-sm mt-3 text-center text-emerald-600 font-medium";
-                
-                // Reset form
-                transactionForm.reset();
+                // Prepare Struk Thermal 58mm
+                document.getElementById('rec-date').textContent = new Date().toLocaleDateString('id-ID');
+                document.getElementById('rec-cust').textContent = custName;
+                document.getElementById('rec-phone').textContent = custPhone;
+                document.getElementById('rec-cashier').textContent = activeUserEmail.split('@')[0];
+                document.getElementById('rec-total').textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+                document.getElementById('rec-pay').textContent = `Rp ${payAmount.toLocaleString('id-ID')}`;
+                document.getElementById('rec-method').textContent = payMethod;
+                document.getElementById('rec-rem').textContent = `Rp ${(remaining > 0 ? remaining : 0).toLocaleString('id-ID')}`;
+                document.getElementById('rec-status').textContent = paymentStatus;
 
-                setTimeout(() => {
-                    formMsg.classList.add('hidden');
-                }, 3000);
+                document.getElementById('rec-items').innerHTML = cart.map(i => {
+                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
+                    return `<div style="margin-bottom: 2px;">• ${i.service}<br>&nbsp;&nbsp;${desc} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
+                }).join('');
 
-            } catch (error) {
-                console.error("Gagal menyimpan transaksi: ", error);
-                formMsg.textContent = "Gagal menyimpan transaksi. Coba lagi.";
-                formMsg.className = "text-sm mt-3 text-center text-red-600 font-medium";
+                alert("Transaksi Berhasil Disimpan! Menyiapkan cetak struk...");
+                window.print();
+
+                // Reset Form
+                cart = [];
+                document.getElementById('cust-name').value = '';
+                document.getElementById('cust-phone').value = '';
+                document.getElementById('pay-amount').value = '';
+                document.getElementById('order-note').value = '';
+                renderCart();
+
+            } catch (err) {
+                console.error("Gagal simpan transaksi:", err);
+                alert("Terjadi kesalahan saat menyimpan transaksi.");
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Simpan & Cetak Struk";
             }
         });
     </script>
