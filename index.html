@@ -14,11 +14,11 @@
         
         <form id="login-form" class="space-y-4">
             <div>
-                <label class="block text-sm font-medium text-slate-600 mb-1">Email</label>
-                <input type="email" id="email" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <label class="block text-sm font-medium text-slate-600 mb-1">Nama Kasir / ID</label>
+                <input type="text" id="username" placeholder="Contoh: admin atau kasir1" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
-                <label class="block text-sm font-medium text-slate-600 mb-1">Password</label>
+                <label class="block text-sm font-medium text-slate-600 mb-1">Kata Sandi</label>
                 <input type="password" id="password" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">Masuk</button>
@@ -33,7 +33,7 @@
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Konfigurasi Firebase Anda
+        // Konfigurasi Firebase Asli Anda
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
             authDomain: "saveyourshoes-pos.firebaseapp.com",
@@ -52,13 +52,16 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            const inputName = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
             errorMsg.classList.add('hidden');
 
+            // Mengubah input nama menjadi format email otomatis untuk dicocokkan dengan Firebase Auth
+            const fauxEmail = `${inputName.toLowerCase()}@saveyourshoes.com`;
+
             try {
                 // 1. Proses Login Authentication
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await signInWithEmailAndPassword(auth, fauxEmail, password);
                 const user = userCredential.user;
 
                 // 2. Ambil data role dari Firestore
@@ -71,9 +74,9 @@
 
                     // 3. Alihkan halaman berdasarkan role secara otomatis
                     if (role === 'admin') {
-                        window.location.href = "admin.html"; // Mengarahkan ke halaman admin.html
+                        window.location.href = "admin.html";
                     } else if (role === 'cashier') {
-                        window.location.href = "cashier.html"; // Mengarahkan ke halaman cashier.html
+                        window.location.href = "cashier.html";
                     } else {
                         errorMsg.textContent = "Role pengguna tidak valid!";
                         errorMsg.classList.remove('hidden');
@@ -84,7 +87,7 @@
                 }
 
             } catch (error) {
-                errorMsg.textContent = "Gagal login: " + error.message;
+                errorMsg.textContent = "Gagal login: Periksa kembali nama dan kata sandi Anda.";
                 errorMsg.classList.remove('hidden');
             }
         });
