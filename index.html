@@ -6,7 +6,7 @@
     <title>Login - SaveYourShoes POS</title>
     <!-- Tailwind CSS untuk styling cepat -->
     <script src="https://cdn.tailwindcss.com"></script>
-</head>s
+</head>
 <body class="bg-slate-100 flex items-center justify-center h-screen">
 
     <div class="bg-white p-8 rounded-xl shadow-md w-full max-w-sm">
@@ -15,7 +15,7 @@
         <form id="login-form" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-slate-600 mb-1">Email / Username Akun</label>
-                <input type="text" id="username" placeholder="Masukkan email atau username" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" id="username" placeholder="Masukkan email terdaftar" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
             </div>
             <div>
                 <label class="block text-sm font-medium text-slate-600 mb-1">Kata Sandi</label>
@@ -28,4 +28,67 @@
     </div>
 
     <!-- Firebase SDK (CDN) -->
-    <script type
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
+            authDomain: "saveyourshoes-pos.firebaseapp.com",
+            projectId: "saveyourshoes-pos",
+            storageBucket: "saveyourshoes-pos.firebasestorage",
+            messagingSenderId: "414855345556",
+            appId: "1:414855345556:web:f049e8b69ae9aef3068b81"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const loginForm = document.getElementById('login-form');
+        const errorMsg = document.getElementById('error-msg');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const inputEmail = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            errorMsg.classList.add('hidden');
+
+            try {
+                // 1. Proses Login Authentication langsung menggunakan email yang diinput
+                const userCredential = await signInWithEmailAndPassword(auth, inputEmail, password);
+                const user = userCredential.user;
+
+                // 2. Ambil data role dari Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const role = userData.role;
+
+                    // 3. Alihkan halaman berdasarkan role secara otomatis
+                    if (role === 'admin') {
+                        window.location.href = "admin.html";
+                    } else if (role === 'cashier') {
+                        window.location.href = "cashier.html";
+                    } else {
+                        errorMsg.textContent = "Role pengguna tidak valid!";
+                        errorMsg.classList.remove('hidden');
+                    }
+                } else {
+                    errorMsg.textContent = "Data hak akses (role) tidak ditemukan di database!";
+                    errorMsg.classList.remove('hidden');
+                }
+
+            } catch (error) {
+                console.error("Error login:", error);
+                errorMsg.textContent = "Gagal login: Periksa kembali email dan kata sandi Anda.";
+                errorMsg.classList.remove('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
