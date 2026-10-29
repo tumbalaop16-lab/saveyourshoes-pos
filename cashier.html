@@ -18,38 +18,78 @@
     <main class="flex-1 p-6 max-w-6xl w-full mx-auto">
         <div class="bg-white p-6 rounded-xl shadow-md mb-6">
             <h2 class="text-2xl font-semibold text-slate-800 mb-2">Selamat Datang, Kasir!</h2>
-            <p class="text-slate-600">Siap untuk mencatat transaksi dan layanan cuci sepatu pelanggan hari ini.</p>
-            <p class="text-sm text-slate-400 mt-1" id="user-email"></p>
+            <p class="text-slate-600">Catat transaksi dan layanan cuci sepatu, tas, atau perawatan lainnya di sini.</p>
+            <p class="text-sm text-emerald-600 font-medium mt-1" id="user-email"></p>
         </div>
 
         <!-- Area Transaksi / POS -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Form Input Transaksi -->
             <div class="md:col-span-2 bg-white p-6 rounded-xl shadow-md">
-                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Input Layanan Baru</h3>
-                <form class="space-y-4">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Input Transaksi Baru</h3>
+                
+                <form id="transaction-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">Nama Pelanggan</label>
-                        <input type="text" placeholder="Masukkan nama pelanggan" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <input type="text" id="cust-name" placeholder="Masukkan nama pelanggan" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-600 mb-1">Nomor WhatsApp</label>
-                        <input type="tel" placeholder="08xxxxxxxxxx" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <input type="tel" id="cust-phone" placeholder="08xxxxxxxxxx" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-slate-600 mb-1">Jenis Layanan</label>
-                        <select class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Pilih Layanan Treatment</label>
+                        <select id="service-select" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
                             <option value="">-- Pilih Layanan --</option>
-                            <option value="deep-clean">Deep Cleaning</option>
-                            <option value="fast-clean">Fast Cleaning</option>
-                            <option value="unyellowing">Unyellowing</option>
-                            <option value="recolor">Recolor / Repaint</option>
+                            
+                            <!-- SHOES -->
+                            <optgroup label="*SHOES*">
+                                <option value="Fastclean|25000">Fastclean - Rp 25.000[cite: 4]</option>
+                                <option value="One Day Wash|80000">One Day Wash - Rp 80.000[cite: 4]</option>
+                                <option value="Cuci Sendal|25000">Cuci Sendal - Rp 25.000[cite: 4]</option>
+                                <option value="Cuci Sepatu Anak|25000">Cuci Sepatu Anak - Rp 25.000[cite: 4]</option>
+                                <option value="Cuci Sepatu Wanita|40000">Cuci Sepatu Wanita - Rp 40.000[cite: 4]</option>
+                                <option value="Cuci Sepatu Pria|45000">Cuci Sepatu Pria - Rp 45.000[cite: 4]</option>
+                                <option value="Whitening Upper|60000">Whitening Upper - Rp 60.000[cite: 4]</option>
+                                <option value="Unyellowing Midsole|70000">Unyellowing Midsole - Rp 70.000[cite: 4]</option>
+                                <option value="Repaint Midsole|80000">Repaint Midsole - Rp 80.000[cite: 4]</option>
+                                <option value="Reglue|120000">Reglue - Rp 120.000[cite: 4]</option>
+                                <option value="Reparasi Shoes|100000">Reparasi Shoes - Rp 100.000[cite: 4]</option>
+                                <option value="Repaint Upper|150000">Repaint Upper - Rp 150.000[cite: 4]</option>
+                                <option value="Ganti Sole|250000">Ganti Sole - Rp 250.000[cite: 4]</option>
+                            </optgroup>
+
+                            <!-- BAG -->
+                            <optgroup label="*BAG*">
+                                <option value="Cuci Tas|50000">Cuci Tas - Rp 50.000[cite: 4]</option>
+                                <option value="Ganti Accessories Tas|70000">Ganti Accessories Tas - Rp 70.000[cite: 4]</option>
+                                <option value="Repaint Tas|150000">Repaint Tas - Rp 150.000[cite: 4]</option>
+                                <option value="Ganti Tali/Handel|150000">Ganti Tali/Handel - Rp 150.000[cite: 4]</option>
+                                <option value="Recover Dompet|250000">Recover Dompet - Rp 250.000[cite: 4]</option>
+                                <option value="Recover Tas|300000">Recover Tas - Rp 300.000[cite: 4]</option>
+                            </optgroup>
+
+                            <!-- OTHERS -->
+                            <optgroup label="*OTHERS*">
+                                <option value="Cuci Helm|40000">Cuci Helm - Rp 40.000[cite: 4]</option>
+                                <option value="Cuci Jaket|70000">Cuci Jaket - Rp 70.000[cite: 4]</option>
+                                <option value="Custom Sepatu|150000">Custom Sepatu - Mulai Rp 150.000[cite: 4]</option>
+                                <option value="Custom Jaket|150000">Custom Jaket - Mulai Rp 150.000[cite: 4]</option>
+                                <option value="Custom Denim|150000">Custom Denim - Mulai Rp 150.000[cite: 4]</option>
+                            </optgroup>
                         </select>
                     </div>
-                    <button type="button" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition">
-                        + Tambah ke Antrean
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Catatan Tambahan (Opsional)</label>
+                        <input type="text" id="cust-note" placeholder="Misal: Warna hitam, sepatu cepat selesai" class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:bg-emerald-700 transition">
+                        Simpan & Masukkan ke Database
                     </button>
                 </form>
+                <p id="form-msg" class="text-sm mt-3 text-center hidden"></p>
             </div>
 
             <!-- Ringkasan Kasir -->
@@ -57,21 +97,20 @@
                 <div>
                     <h3 class="text-lg font-bold text-slate-800 mb-4 border-b pb-2">Status Kasir</h3>
                     <div class="bg-emerald-50 text-emerald-800 p-4 rounded-lg text-sm mb-4">
-                        <p class="font-semibold">Sistem Siap Digunakan</p>
-                        <p class="text-xs text-emerald-600 mt-1">Gunakan form di samping untuk mulai mencatat orderan.</p>
+                        <p class="font-semibold">Sistem Terhubung</p>
+                        <p class="text-xs text-emerald-600 mt-1">Data transaksi yang disimpan akan langsung masuk secara realtime ke database cloud Firestore.</p>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Script Proteksi Role Kasir & Logout -->
+    <!-- Script Logika, Auth & Firestore -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Konfigurasi Firebase Asli Anda
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
             authDomain: "saveyourshoes-pos.firebaseapp.com",
@@ -85,14 +124,17 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Proteksi Halaman: Pastikan user login & memiliki role 'cashier' atau 'admin'
+        let activeUserEmail = "";
+
+        // Proteksi Halaman Kasir
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
                 if (userDoc.exists() && (userDoc.data().role === 'cashier' || userDoc.data().role === 'admin')) {
+                    activeUserEmail = user.email;
                     document.getElementById('user-email').textContent = "Kasir Aktif: " + user.email;
                 } else {
-                    alert("Akses ditolak! Anda tidak memiliki akses kasir.");
+                    alert("Akses ditolak! Anda tidak memiliki hak akses kasir.");
                     window.location.href = "index.html";
                 }
             } else {
@@ -100,13 +142,66 @@
             }
         });
 
-        // Fitur Tombol Logout
+        // Tombol Logout
         document.getElementById('logout-btn').addEventListener('click', () => {
             signOut(auth).then(() => {
                 window.location.href = "index.html";
             }).catch((error) => {
                 console.error("Gagal logout:", error);
             });
+        });
+
+        // Proses Simpan Transaksi ke Firestore
+        const transactionForm = document.getElementById('transaction-form');
+        const formMsg = document.getElementById('form-msg');
+
+        transactionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('cust-name').value.trim();
+            const phone = document.getElementById('cust-phone').value.trim();
+            const serviceValue = document.getElementById('service-select').value;
+            const note = document.getElementById('cust-note').value.trim();
+
+            if (!serviceValue) {
+                alert("Silakan pilih jenis layanan terlebih dahulu!");
+                return;
+            }
+
+            const [serviceName, servicePrice] = serviceValue.split('|');
+
+            formMsg.textContent = "Menyimpan transaksi...";
+            formMsg.className = "text-sm mt-3 text-center text-blue-600 font-medium";
+            formMsg.classList.remove('hidden');
+
+            try {
+                // Simpan ke koleksi 'transactions' di Firestore
+                await addDoc(collection(db, "transactions"), {
+                    customerName: name,
+                    customerPhone: phone,
+                    service: serviceName,
+                    price: Number(servicePrice),
+                    note: note,
+                    cashier: activeUserEmail,
+                    status: "Pending",
+                    createdAt: serverTimestamp()
+                });
+
+                formMsg.textContent = "Berhasil! Transaksi tersimpan ke database.";
+                formMsg.className = "text-sm mt-3 text-center text-emerald-600 font-medium";
+                
+                // Reset form
+                transactionForm.reset();
+
+                setTimeout(() => {
+                    formMsg.classList.add('hidden');
+                }, 3000);
+
+            } catch (error) {
+                console.error("Gagal menyimpan transaksi: ", error);
+                formMsg.textContent = "Gagal menyimpan transaksi. Coba lagi.";
+                formMsg.className = "text-sm mt-3 text-center text-red-600 font-medium";
+            }
         });
     </script>
 </body>
