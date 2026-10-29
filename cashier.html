@@ -163,32 +163,37 @@
         </div>
     </main>
 
-    <!-- Template Struk Thermal 58mm (Tersembunyi di Layar, Tampak saat Print) -->
+    <!-- Template Struk Thermal 58mm (Sesuai Konsep Nota Toko) -->
     <div id="receipt-print" class="hidden print:block">
-        <div style="text-align: center;">
+        <div style="text-align: center; font-family: monospace;">
             <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
-            <span style="font-size: 9px;">Kediri & Malang</span><br>
+            <span style="font-size: 8px;">Jl. Bantaran Indah No. 14, Tulusrejo</span><br>
+            <span style="font-size: 8px;">Kec. Lowokwaru, Kota Malang</span><br>
+            <span style="font-size: 8px;">IG: @saveyourshoes_official</span><br>
+            <span style="font-size: 8px;">WA: 082326172488</span><br>
             --------------------------------
         </div>
-        <div style="font-size: 10px; margin-top: 4px;">
-            Tanggal: <span id="rec-date"></span><br>
-            Pelanggan: <span id="rec-cust"></span> (<span id="rec-phone"></span>)<br>
+        <div style="font-size: 10px; font-family: monospace; margin-top: 4px;">
+            No: <span id="rec-notrx">SYS-2026...</span><br>
+            Tgl: <span id="rec-date"></span><br>
+            Cust: <span id="rec-cust"></span> (<span id="rec-phone"></span>)<br>
             Kasir: <span id="rec-cashier"></span><br>
+            Metode: <span id="rec-method"></span><br>
             --------------------------------
         </div>
-        <div style="font-size: 10px;">
-            <b>DETAIL PESANAN:</b>
+        <div style="font-size: 10px; font-family: monospace;">
+            <b>DAFTAR SERVICE:</b>
             <div id="rec-items"></div>
             --------------------------------
         </div>
-        <div style="font-size: 10px;">
-            Total  : <span id="rec-total"></span><br>
-            Bayar  : <span id="rec-pay"></span> (<span id="rec-method"></span>)<br>
-            Keterangan: <span id="rec-rem"></span><br>
-            Status : <span id="rec-status"></span><br>
+        <div style="font-size: 10px; font-family: monospace;">
+            TOTAL BIAYA : <span id="rec-total"></span><br>
+            Bayar / DP  : <span id="rec-pay"></span><br>
+            <span id="label-rec-rem">SISA BAYAR</span> : <span id="rec-rem"></span><br>
+            Status      : <span id="rec-status"></span><br>
             --------------------------------
         </div>
-        <div style="text-align: center; font-size: 9px; margin-top: 6px;">
+        <div style="text-align: center; font-size: 8px; font-family: monospace; margin-top: 6px;">
             Terima kasih atas kepercayaannya!<br>
             Simpan struk ini saat pengambilan.
         </div>
@@ -426,6 +431,11 @@
             const remainingAmount = diff < 0 ? Math.abs(diff) : 0;
             const paymentStatus = diff >= 0 ? "LUNAS" : "BELUM LUNAS (DP)";
 
+            // Buat nomor nota otomatis ala toko
+            const todayStr = new Date().toISOString().slice(0,10).replace(/-/g,'');
+            const randomCode = Math.floor(100 + Math.random() * 900);
+            const noTrx = `SYS-${todayStr}-${randomCode}`;
+
             const btn = document.getElementById('submit-order-btn');
             btn.disabled = true;
             btn.textContent = "Menyimpan...";
@@ -433,6 +443,7 @@
             try {
                 // Simpan ke Firestore
                 await addDoc(collection(db, "transactions"), {
+                    noTrx: noTrx,
                     customerName: custName,
                     customerPhone: custPhone,
                     items: cart,
@@ -448,19 +459,27 @@
                 });
 
                 // Tampilkan info di struk cetak
-                document.getElementById('rec-date').textContent = new Date().toLocaleDateString('id-ID');
+                document.getElementById('rec-notrx').textContent = noTrx;
+                document.getElementById('rec-date').textContent = new Date().toLocaleString('id-ID');
                 document.getElementById('rec-cust').textContent = custName;
                 document.getElementById('rec-phone').textContent = custPhone;
                 document.getElementById('rec-cashier').textContent = activeUserEmail.split('@')[0];
+                document.getElementById('rec-method').textContent = payMethod;
                 document.getElementById('rec-total').textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
                 document.getElementById('rec-pay').textContent = `Rp ${payAmount.toLocaleString('id-ID')}`;
-                document.getElementById('rec-method').textContent = payMethod;
-                document.getElementById('rec-rem').textContent = diff >= 0 ? `Rp ${changeAmount.toLocaleString('id-ID')} (Kembali)` : `Rp ${remainingAmount.toLocaleString('id-ID')} (Sisa)`;
+                
+                if (diff >= 0) {
+                    document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
+                    document.getElementById('rec-rem').textContent = `Rp ${changeAmount.toLocaleString('id-ID')}`;
+                } else {
+                    document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
+                    document.getElementById('rec-rem').textContent = `Rp ${remainingAmount.toLocaleString('id-ID')}`;
+                }
                 document.getElementById('rec-status').textContent = paymentStatus;
 
-                document.getElementById('rec-items').innerHTML = cart.map(i => {
+                document.getElementById('rec-items').innerHTML = cart.map((i, idx) => {
                     const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">• ${i.service}<br>&nbsp;&nbsp;${desc} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
+                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
                 }).join('');
 
                 alert("Transaksi Berhasil Disimpan! Menyiapkan cetak struk...");
