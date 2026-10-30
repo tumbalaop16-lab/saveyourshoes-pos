@@ -23,14 +23,14 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Install Bubblewrap
-      run: npm install -g @bubblewrap/cli
-
-    - name: 5. Generate APK secara Otomatis
+    - name: 4. Install Bubblewrap & CLI Utils
       run: |
-        mkdir android-project
+        npm install -g @bubblewrap/cli
+        echo "y" | bubblewrap init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory=android-project --skip-sdk-install
+
+    - name: 5. Build APK
+      run: |
         cd android-project
-        bubblewrap init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --skip-sdk-install --manifest-validation=lax --color=false
         bubblewrap build --skip-signing
 
     - name: 6. Simpan Hasil File APK
