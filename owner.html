@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Owner - SaveYourShoes POS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col">
+
+    <!-- Navbar Owner -->
+    <nav class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center font-black text-slate-900 text-sm">SYS</div>
+            <h1 class="text-lg font-bold tracking-wide">Owner Dashboard - SaveYourShoes</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="text-xs text-amber-400 font-semibold bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700" id="owner-email">Owner Aktif</span>
+            <button id="logout-btn" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg transition text-xs font-semibold">Keluar</button>
+        </div>
+    </nav>
+
+    <!-- Konten Utama Dashboard Owner -->
+    <main class="flex-1 p-4 md:p-6 max-w-7xl w-full mx-auto space-y-6">
+        
+        <!-- Kartu Metrik Keuangan Eksekutif -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-emerald-500">
+                <p class="text-xs text-slate-500 font-medium">Total Pendapatan Masuk (Lunas/DP)</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="total-revenue">Rp 0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-amber-500">
+                <p class="text-xs text-slate-500 font-medium">Total Sisa Piutang / Belum Lunas</p>
+                <h3 class="text-2xl font-bold text-amber-600 mt-1" id="total-remaining">Rp 0</h3>
+            </div>
+            <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-blue-500">
+                <p class="text-xs text-slate-500 font-medium">Total Seluruh Transaksi</p>
+                <h3 class="text-2xl font-bold text-slate-800 mt-1" id="total-transactions">0 Nota</h3>
+            </div>
+        </div>
+
+        <!-- Tabel Rekap & Audit Transaksi -->
+        <div class="bg-white p-5 rounded-xl shadow-md space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3">
+                <h3 class="text-md font-bold text-slate-800">Laporan & Audit Transaksi Pelanggan</h3>
+                
+                <!-- Pencarian & Filter Keuangan -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <input type="text" id="search-input" placeholder="🔍 Cari nota / pelanggan..." onkeyup="filterTransactions()" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 w-full md:w-48">
+                    
+                    <select id="status-filter" onchange="filterTransactions()" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                        <option value="ALL">Semua Status</option>
+                        <option value="BELUM LUNAS">Belum Lunas / DP</option>
+                        <option value="LUNAS">Lunas</option>
+                        <option value="DIAMBIL">Sudah Diambil</option>
+                    </select>
+
+                    <button onclick="loadOwnerData()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">🔄 Muat Ulang</button>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600">
+                            <th class="p-2 border">No. Nota</th>
+                            <th class="p-2 border">Waktu</th>
+                            <th class="p-2 border">Pelanggan</th>
+                            <th class="p-2 border">Detail Pesanan</th>
+                            <th class="p-2 border">Total & Pembayaran</th>
+                            <th class="p-2 border text-center">Status</th>
+                            <th class="p-2 border text-center">Audit / Struk</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transaction-table-body">
+                        <tr>
+                            <td colspan="7" class="p-4 text-center text-slate-400">Memuat laporan keuangan dari database...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- Script Firebase & Logika Owner -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
+            authDomain: "saveyourshoes-pos.firebaseapp.com",
+            projectId: "saveyourshoes-pos",
+            storageBucket: "saveyourshoes-pos.firebasestorage",
+            messagingSenderId: "414855345556",
+            appId: "1:414855345556:web:f049e8b69ae9aef3068b81"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let allTransactions = [];
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('owner-email').textContent = `${user.email} (Owner)`;
+                loadOwnerData();
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => signOut(auth).then(() => window.location.href = "index.html"));
+
+        window.loadOwnerData = async function() {
+            const tbody = document.getElementById('transaction-table-body');
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Menghitung rekap laporan keuangan...</td></tr>`;
+
+            try {
+                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                allTransactions = [];
+                let totalRevenue = 0;
+                let totalRemaining = 0;
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    allTransactions.push({ id: docSnap.id, ...data });
+                    totalRevenue += (data.paidAmount || 0);
+                    totalRemaining += (data.remainingAmount || 0);
+                });
+
+                document.getElementById('total-revenue').textContent = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
+                document.getElementById('total-remaining').textContent = `Rp ${totalRemaining.toLocaleString('id-ID')}`;
+                renderTable(allTransactions);
+
+            } catch (err) {
+                console.error("Gagal memuat data owner:", err);
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat laporan keuangan. Periksa koneksi database.</td></tr>`;
+            }
+        };
+
+        function renderTable(dataArray) {
+            const tbody = document.getElementById('transaction-table-body');
+            document.getElementById('total-transactions').textContent = `${dataArray.length} Nota`;
+
+            if (dataArray.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada data transaksi yang cocok.</td></tr>`;
+                return;
+            }
+
+            let rowsHtml = "";
+            dataArray.forEach((data) => {
+                const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString('id-ID') : 'Baru saja';
+                const itemsSummary = (data.items || []).map(i => `• ${i.category}: ${i.service} (${i.brand})`).join('<br>');
+                
+                let statusBadge = "";
+                if (data.paymentStatus === 'LUNAS') {
+                    statusBadge = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>`;
+                } else if (data.paymentStatus === 'SELESAI & DIAMBIL') {
+                    statusBadge = `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded-full text-[10px]">DIAMBIL</span>`;
+                } else {
+                    statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP (Sisa: Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')})</span>`;
+                }
+
+                const encodedData = encodeURIComponent(JSON.stringify(data));
+
+                rowsHtml += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-2 font-mono font-bold text-slate-700">${data.noTrx || 'SYS-OLD'}</td>
+                        <td class="p-2 text-slate-500">${dateStr}</td>
+                        <td class="p-2 font-medium">${data.customerName}<br><span class="text-slate-400 text-[10px]">${data.customerPhone}</span></td>
+                        <td class="p-2">${itemsSummary}</td>
+                        <td class="p-2">
+                            <span class="font-bold text-emerald-600">Total: Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</span><br>
+                            <span class="text-slate-500 text-[10px]">Bayar: Rp ${(data.paidAmount || 0).toLocaleString('id-ID')} (${data.paymentMethod})</span>
+                        </td>
+                        <td class="p-2 text-center">${statusBadge}</td>
+                        <td class="p-2 text-center">
+                            <button onclick="reprintReceipt('${encodedData}')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-1 rounded text-[10px] font-semibold transition">🖨️ Audit Struk</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = rowsHtml;
+        }
+
+        window.filterTransactions = function() {
+            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            const filtered = allTransactions.filter(item => {
+                const matchKeyword = (item.noTrx && item.noTrx.toLowerCase().includes(keyword)) || 
+                                     (item.customerName && item.customerName.toLowerCase().includes(keyword)) ||
+                                     (item.customerPhone && item.customerPhone.includes(keyword));
+                
+                let matchStatus = true;
+                if (statusFilter === 'BELUM LUNAS') {
+                    matchStatus = item.paymentStatus !== 'LUNAS' && item.paymentStatus !== 'SELESAI & DIAMBIL';
+                } else if (statusFilter === 'LUNAS') {
+                    matchStatus = item.paymentStatus === 'LUNAS';
+                } else if (statusFilter === 'DIAMBIL') {
+                    matchStatus = item.paymentStatus === 'SELESAI & DIAMBIL';
+                }
+
+                return matchKeyword && matchStatus;
+            });
+
+            renderTable(filtered);
+        };
+
+        window.reprintReceipt = function(encodedData) {
+            const data = JSON.parse(decodeURIComponent(encodedData));
+            const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString('id-ID') : 'Baru saja';
+            
+            let itemsHtml = '';
+            (data.items || []).forEach((item, idx) => {
+                itemsHtml += `
+                    <div style="margin-bottom: 4px;">
+                        <div><b>${idx + 1}. ${item.category} - ${item.service}</b></div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Brand: ${item.brand} (${item.color})</span>
+                            <span>Rp ${item.price.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const printWindow = window.open('', '_blank', 'width=300,height=600');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Audit Struk - SaveYourShoes</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; font-size: 11px; width: 58mm; margin: 0; padding: 5px; color: #000; }
+                        .text-center { text-align: center; }
+                        .bold { font-weight: bold; }
+                        .dashed { border-bottom: 1px dashed #000; margin: 6px 0; }
+                        .flex { display: flex; justify-content: space-between; }
+                    </style>
+                </head>
+                <body>
+                    <div class="text-center bold" style="font-size: 13px;">[AUDIT OWNER] SYS</div>
+                    <div class="text-center" style="font-size: 9px;">Jl. Bantaran Indah, Malang</div>
+                    <div class="dashed"></div>
+                    <div>No. Nota : ${data.noTrx || 'SYS-NOTE'}</div>
+                    <div>Waktu    : ${dateStr}</div>
+                    <div>Kasir    : ${data.cashier || 'Admin'}</div>
+                    <div>Pelanggan: ${data.customerName} (${data.customerPhone})</div>
+                    <div class="dashed"></div>
+                    <div class="bold">RINCIAN PESANAN:</div>
+                    ${itemsHtml}
+                    <div class="dashed"></div>
+                    <div class="flex"><span>Total Item:</span><span>${(data.items || []).length}</span></div>
+                    <div class="flex bold" style="font-size: 12px;"><span>TOTAL:</span><span>Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex"><span>Dibayar (${data.paymentMethod}):</span><span>Rp ${(data.paidAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex"><span>Sisa Piutang:</span><span>Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex bold"><span>Status:</span><span>${data.paymentStatus}</span></div>
+                    <div class="dashed"></div>
+                    <div class="text-center" style="font-size: 9px;">Laporan Audit Internal Owner</div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
+        };
+    </script>
+</body>
+</html>
