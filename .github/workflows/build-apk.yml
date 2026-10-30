@@ -1,4 +1,4 @@
-name: Build Web to APK (TWA)
+name: Build Web to APK (PWABuilder)
 
 on:
   push:
@@ -17,24 +17,15 @@ jobs:
       with:
         node-version: '18'
 
-    - name: 3. Setel Java (JDK 17)
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+    - name: 3. Install PWABuilder CLI
+      run: npm install -g @pwabuilder/cli
 
-    - name: 4. Install Bubblewrap & CLI Utils
+    - name: 4. Generate & Build APK Otomatis
       run: |
-        npm install -g @bubblewrap/cli
-        echo "y" | bubblewrap init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory=android-project --skip-sdk-install
+        pwabuilder generate --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --platforms android
 
-    - name: 5. Build APK
-      run: |
-        cd android-project
-        bubblewrap build --skip-signing
-
-    - name: 6. Simpan Hasil File APK
+    - name: 5. Simpan Hasil File APK
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-Android-APK
-        path: android-project/*.apk
+        path: android/app/build/outputs/apk/release/*.apk
