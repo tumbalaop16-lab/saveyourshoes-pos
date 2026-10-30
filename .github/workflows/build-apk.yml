@@ -1,0 +1,39 @@
+name: Build Web to APK (TWA)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 1. Ambil Kode Repository
+      uses: actions/checkout@v4
+
+    - name: 2. Setel Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: 3. Setel Java (JDK 17)
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+
+    - name: 4. Install Bubblewrap
+      run: npm install -g @bubblewrap/cli
+
+    - name: 5. Generate APK secara Otomatis
+      run: |
+        bubblewrap init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory=android-project --batch
+        cd android-project
+        bubblewrap build
+
+    - name: 6. Simpan Hasil File APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: SaveYourShoes-Android-APK
+        path: android-project/*.apk
