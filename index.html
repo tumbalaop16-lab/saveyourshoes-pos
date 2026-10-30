@@ -31,8 +31,8 @@
         <!-- Form Login -->
         <form id="login-form" class="space-y-4">
             <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Username / Email</label>
-                <input type="text" id="username" placeholder="Masukkan username atau email terdaftar" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Username / ID Pengguna</label>
+                <input type="text" id="username" placeholder="Contoh: kasir1, admin, atau owner" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
@@ -71,26 +71,27 @@
 
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const inputVal = document.getElementById('username').value.trim();
+            const inputVal = document.getElementById('username').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
             errorMsg.classList.add('hidden');
 
-            const emailToUse = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@saveyourshoes.com`;
+            // Otomatis menambahkan ekstensi domain jika user hanya mengetik nama biasa
+            const emailToUse = inputVal.includes('@') ? inputVal : `${inputVal}@saveyourshoes.com`;
 
             try {
-                // 1. Authenticate Firebase Auth
+                // Proses autentikasi Firebase
                 const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
                 const user = userCredential.user;
 
                 let userRole = null;
 
-                // 2. Cek Dokumen Firestore via User UID
+                // 1. Cek role berdasarkan UID dokumen Firestore
                 const docByUid = await getDoc(doc(db, "users", user.uid));
                 if (docByUid.exists() && docByUid.data().role) {
                     userRole = docByUid.data().role.toLowerCase();
                 }
 
-                // 3. Jika tidak ketemu via UID, coba Cek Dokumen Firestore via Email
+                // 2. Jika belum ketemu, cek berdasarkan ID dokumen berupa email
                 if (!userRole) {
                     const docByEmail = await getDoc(doc(db, "users", user.email.toLowerCase()));
                     if (docByEmail.exists() && docByEmail.data().role) {
@@ -98,7 +99,7 @@
                     }
                 }
 
-                // 4. Jika masih belum ketemu, cari dokumen yang punya field email == user.email
+                // 3. Jika masih belum ketemu, cari via query field email
                 if (!userRole) {
                     const q = query(collection(db, "users"), where("email", "==", user.email.toLowerCase()));
                     const querySnap = await getDocs(q);
@@ -107,23 +108,18 @@
                     }
                 }
 
-                console.log("Role terdeteksi:", userRole);
-
-                // 5. Routing Pengalihan Halaman
+                // Pengalihan halaman sesuai role
                 if (userRole === 'owner') {
                     window.location.href = "owner.html";
                 } else if (userRole === 'admin') {
                     window.location.href = "admin.html";
-                } else if (userRole === 'cashier' || userRole === 'kasir') {
-                    window.location.href = "cashier.html";
                 } else {
-                    // Default fallback jika role belum diset di Firestore
-                    window.location.href = "admin.html";
+                    window.location.href = "cashier.html";
                 }
 
             } catch (error) {
                 console.error("Login error:", error);
-                errorMsg.textContent = "Gagal Masuk: Periksa kembali Username/Email dan Kata Sandi Anda.";
+                errorMsg.textContent = "Gagal Masuk: Periksa kembali Username dan Kata Sandi Anda.";
                 errorMsg.classList.remove('hidden');
             }
         });
