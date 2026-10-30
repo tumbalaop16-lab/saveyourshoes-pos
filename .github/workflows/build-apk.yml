@@ -28,9 +28,9 @@ jobs:
 
     - name: 5. Generate APK secara Otomatis
       run: |
-        yes | bubblewrap init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory=android-project --batch
+        npx @bubblewrap/cli init --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory=android-project --skip-sdk-install --force
         cd android-project
-        bubblewrap build --skip-signing
+        npx @bubblewrap/cli build --skip-signing
 
     - name: 6. Simpan Hasil File APK
       uses: actions/upload-artifact@v4
