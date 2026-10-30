@@ -51,7 +51,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
@@ -78,22 +78,48 @@
             const emailToUse = inputVal.includes('@') ? inputVal : `${inputVal.toLowerCase()}@saveyourshoes.com`;
 
             try {
+                // 1. Authenticate Firebase Auth
                 const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
                 const user = userCredential.user;
 
-                const userDocRef = doc(db, "users", user.uid);
-                const userDoc = await getDoc(userDocRef);
+                let userRole = null;
 
-                if (userDoc.exists()) {
-                    const role = userDoc.data().role;
+                // 2. Cek Dokumen Firestore via User UID
+                const docByUid = await getDoc(doc(db, "users", user.uid));
+                if (docByUid.exists() && docByUid.data().role) {
+                    userRole = docByUid.data().role.toLowerCase();
+                }
 
-                    if (role === 'owner') {
-    window.location.href = "owner.html";
-} else if (role === 'admin') {
-    window.location.href = "admin.html";
-} else {
-    window.location.href = "cashier.html";
-}
+                // 3. Jika tidak ketemu via UID, coba Cek Dokumen Firestore via Email
+                if (!userRole) {
+                    const docByEmail = await getDoc(doc(db, "users", user.email.toLowerCase()));
+                    if (docByEmail.exists() && docByEmail.data().role) {
+                        userRole = docByEmail.data().role.toLowerCase();
+                    }
+                }
+
+                // 4. Jika masih belum ketemu, cari dokumen yang punya field email == user.email
+                if (!userRole) {
+                    const q = query(collection(db, "users"), where("email", "==", user.email.toLowerCase()));
+                    const querySnap = await getDocs(q);
+                    if (!querySnap.empty) {
+                        userRole = querySnap.docs[0].data().role.toLowerCase();
+                    }
+                }
+
+                console.log("Role terdeteksi:", userRole);
+
+                // 5. Routing Pengalihan Halaman
+                if (userRole === 'owner') {
+                    window.location.href = "owner.html";
+                } else if (userRole === 'admin') {
+                    window.location.href = "admin.html";
+                } else if (userRole === 'cashier' || userRole === 'kasir') {
+                    window.location.href = "cashier.html";
+                } else {
+                    // Default fallback jika role belum diset di Firestore
+                    window.location.href = "admin.html";
+                }
 
             } catch (error) {
                 console.error("Login error:", error);
