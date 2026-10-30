@@ -34,7 +34,7 @@
             </div>
             <div class="bg-white p-5 rounded-xl shadow-md border-l-4 border-amber-500">
                 <p class="text-xs text-slate-500 font-medium">Status Akun Admin</p>
-                <h3 class="text-sm font-bold text-slate-800 mt-2 truncate" id="admin-email">Memuat...</h3>
+                <h3 class="text-sm font-bold text-slate-800 mt-2 truncate" id="admin-email">Aktif</h3>
             </div>
         </div>
 
@@ -72,7 +72,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, getDocs, query, orderBy, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
@@ -87,17 +87,11 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Auth Protection khusus Admin
-        onAuthStateChanged(auth, async (user) => {
-            if (user) { pelacakRole:
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists() && userDoc.data().role === 'admin') {
-                    document.getElementById('admin-email').textContent = user.email;
-                    loadTransactions();
-                } else {
-                    alert("Akses ditolak! Halaman ini khusus Admin.");
-                    window.location.href = "cashier.html";
-                }
+        // Cek Auth Sederhana Tanpa Blokir Berlebihan
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('admin-email').textContent = user.email || "Admin Aktif";
+                loadTransactions();
             } else {
                 window.location.href = "index.html";
             }
@@ -108,7 +102,7 @@
         // Ambil Data Transaksi dari Firestore
         window.loadTransactions = async function() {
             const tbody = document.getElementById('transaction-table-body');
-            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Mengambil data...</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Mengambil data dari database...</td></tr>`;
 
             try {
                 const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
@@ -119,7 +113,7 @@
                 let rowsHtml = "";
 
                 if (querySnapshot.empty) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi tercatat.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi tercatat di database.</td></tr>`;
                     document.getElementById('total-revenue').textContent = "Rp 0";
                     document.getElementById('total-transactions').textContent = "0 Nota";
                     return;
@@ -134,10 +128,11 @@
                     const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString('id-ID') : 'Baru saja';
                     const itemsSummary = (data.items || []).map(i => `• ${i.category}: ${i.service} (${i.brand})`).join('<br>');
                     
-                    // Format Badge Status
                     let statusBadge = "";
                     if (data.paymentStatus === 'LUNAS') {
                         statusBadge = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>`;
+                    } else if (data.paymentStatus === 'SELESAI & DIAMBIL') {
+                        statusBadge = `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded-full text-[10px]">DIAMBIL</span>`;
                     } else {
                         statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP (Sisa: Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')})</span>`;
                     }
@@ -164,11 +159,10 @@
 
             } catch (err) {
                 console.error("Gagal memuat laporan:", err);
-                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat data dari database.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-red-500">Gagal memuat data. Periksa koneksi atau indeks database.</td></tr>`;
             }
         };
 
-        // Fungsi Mengubah Status Pembayaran / Pengambilan di Firestore
         window.updateStatus = async function(docId, newStatus) {
             const confirmMsg = newStatus === 'LUNAS' ? "Ubah status transaksi ini menjadi LUNAS?" : "Tandai cucian ini sudah DIAMBIL oleh pelanggan?";
             if (!confirm(confirmMsg)) return;
@@ -186,7 +180,7 @@
                     });
                 }
                 alert("Status berhasil diperbarui!");
-                loadTransactions(); // Refresh tabel
+                loadTransactions();
             } catch (err) {
                 console.error("Gagal update status:", err);
                 alert("Terjadi kesalahan saat memperbarui status.");
