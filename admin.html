@@ -38,11 +38,24 @@
             </div>
         </div>
 
-        <!-- Tabel Riwayat Transaksi -->
-        <div class="bg-white p-5 rounded-xl shadow-md">
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
+        <!-- Tabel Riwayat Transaksi & Fitur Tambahan -->
+        <div class="bg-white p-5 rounded-xl shadow-md space-y-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-3 border-b pb-3">
                 <h3 class="text-md font-bold text-slate-800">Riwayat & Status Cucian Pelanggan</h3>
-                <button onclick="loadTransactions()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">🔄 Muat Ulang Data</button>
+                
+                <!-- Fitur Pencarian & Filter Status -->
+                <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+                    <input type="text" id="search-input" placeholder="🔍 Cari no. nota / nama..." onkeyup="filterTransactions()" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-48">
+                    
+                    <select id="status-filter" onchange="filterTransactions()" class="px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="ALL">Semua Status</option>
+                        <option value="BELUM LUNAS">Belum Lunas / DP</option>
+                        <option value="LUNAS">Lunas</option>
+                        <option value="DIAMBIL">Sudah Diambil</option>
+                    </select>
+
+                    <button onclick="loadTransactions()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-semibold transition">🔄 Muat Ulang</button>
+                </div>
             </div>
             
             <div class="overflow-x-auto">
@@ -87,7 +100,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Cek Auth Sederhana Tanpa Blokir Berlebihan
+        let allTransactions = []; // Menyimpan data master untuk pencarian & filter
+
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 document.getElementById('admin-email').textContent = user.email || "Admin Aktif";
@@ -108,54 +122,17 @@
                 const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
+                allTransactions = [];
                 let totalRevenue = 0;
-                let totalCount = 0;
-                let rowsHtml = "";
-
-                if (querySnapshot.empty) {
-                    tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Belum ada transaksi tercatat di database.</td></tr>`;
-                    document.getElementById('total-revenue').textContent = "Rp 0";
-                    document.getElementById('total-transactions').textContent = "0 Nota";
-                    return;
-                }
 
                 querySnapshot.forEach((docSnap) => {
                     const data = docSnap.data();
-                    const docId = docSnap.id;
+                    allTransactions.push({ id: docSnap.id, ...data });
                     totalRevenue += (data.totalAmount || 0);
-                    totalCount++;
-
-                    const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString('id-ID') : 'Baru saja';
-                    const itemsSummary = (data.items || []).map(i => `• ${i.category}: ${i.service} (${i.brand})`).join('<br>');
-                    
-                    let statusBadge = "";
-                    if (data.paymentStatus === 'LUNAS') {
-                        statusBadge = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>`;
-                    } else if (data.paymentStatus === 'SELESAI & DIAMBIL') {
-                        statusBadge = `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded-full text-[10px]">DIAMBIL</span>`;
-                    } else {
-                        statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP (Sisa: Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')})</span>`;
-                    }
-
-                    rowsHtml += `
-                        <tr class="border-b hover:bg-slate-50">
-                            <td class="p-2 font-mono font-bold text-slate-700">${data.noTrx || 'SYS-OLD'}</td>
-                            <td class="p-2 text-slate-500">${dateStr}</td>
-                            <td class="p-2 font-medium">${data.customerName}<br><span class="text-slate-400 text-[10px]">${data.customerPhone}</span></td>
-                            <td class="p-2">${itemsSummary}</td>
-                            <td class="p-2 font-bold text-emerald-600">Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</td>
-                            <td class="p-2 text-center">${statusBadge}</td>
-                            <td class="p-2 text-center space-y-1">
-                                <button onclick="updateStatus('${docId}', 'LUNAS')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Lunas</button>
-                                <button onclick="updateStatus('${docId}', 'DIAMBIL')" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Diambil</button>
-                            </td>
-                        </tr>
-                    `;
                 });
 
-                tbody.innerHTML = rowsHtml;
                 document.getElementById('total-revenue').textContent = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
-                document.getElementById('total-transactions').textContent = `${totalCount} Nota`;
+                renderTable(allTransactions);
 
             } catch (err) {
                 console.error("Gagal memuat laporan:", err);
@@ -163,6 +140,78 @@
             }
         };
 
+        // Render Tabel Berdasarkan Data
+        function renderTable(dataArray) {
+            const tbody = document.getElementById('transaction-table-body');
+            document.getElementById('total-transactions').textContent = `${dataArray.length} Nota`;
+
+            if (dataArray.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Tidak ada transaksi yang cocok.</td></tr>`;
+                return;
+            }
+
+            let rowsHtml = "";
+            dataArray.forEach((data) => {
+                const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString('id-ID') : 'Baru saja';
+                const itemsSummary = (data.items || []).map(i => `• ${i.category}: ${i.service} (${i.brand})`).join('<br>');
+                
+                let statusBadge = "";
+                if (data.paymentStatus === 'LUNAS') {
+                    statusBadge = `<span class="px-2 py-0.5 bg-emerald-100 text-emerald-700 font-bold rounded-full text-[10px]">LUNAS</span>`;
+                } else if (data.paymentStatus === 'SELESAI & DIAMBIL') {
+                    statusBadge = `<span class="px-2 py-0.5 bg-blue-100 text-blue-700 font-bold rounded-full text-[10px]">DIAMBIL</span>`;
+                } else {
+                    statusBadge = `<span class="px-2 py-0.5 bg-amber-100 text-amber-700 font-bold rounded-full text-[10px]">DP (Sisa: Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')})</span>`;
+                }
+
+                // Encode data transaksi ke format JSON untuk fitur cetak ulang struk (reprint)
+                const encodedData = encodeURIComponent(JSON.stringify(data));
+
+                rowsHtml += `
+                    <tr class="border-b hover:bg-slate-50">
+                        <td class="p-2 font-mono font-bold text-slate-700">${data.noTrx || 'SYS-OLD'}</td>
+                        <td class="p-2 text-slate-500">${dateStr}</td>
+                        <td class="p-2 font-medium">${data.customerName}<br><span class="text-slate-400 text-[10px]">${data.customerPhone}</span></td>
+                        <td class="p-2">${itemsSummary}</td>
+                        <td class="p-2 font-bold text-emerald-600">Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</td>
+                        <td class="p-2 text-center">${statusBadge}</td>
+                        <td class="p-2 text-center space-y-1">
+                            <button onclick="updateStatus('${data.id}', 'LUNAS')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Lunas</button>
+                            <button onclick="updateStatus('${data.id}', 'DIAMBIL')" class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">Set Diambil</button>
+                            <button onclick="reprintReceipt('${encodedData}')" class="bg-slate-700 hover:bg-slate-800 text-white px-2 py-1 rounded text-[10px] font-semibold transition block w-full">🖨️ Cetak Struk</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = rowsHtml;
+        }
+
+        // Fungsi Filter & Pencarian
+        window.filterTransactions = function() {
+            const keyword = document.getElementById('search-input').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value;
+
+            const filtered = allTransactions.filter(item => {
+                const matchKeyword = (item.noTrx && item.noTrx.toLowerCase().includes(keyword)) || 
+                                     (item.customerName && item.customerName.toLowerCase().includes(keyword)) ||
+                                     (item.customerPhone && item.customerPhone.includes(keyword));
+                
+                let matchStatus = true;
+                if (statusFilter === 'BELUM LUNAS') {
+                    matchStatus = item.paymentStatus !== 'LUNAS' && item.paymentStatus !== 'SELESAI & DIAMBIL';
+                } else if (statusFilter === 'LUNAS') {
+                    matchStatus = item.paymentStatus === 'LUNAS';
+                } else if (statusFilter === 'DIAMBIL') {
+                    matchStatus = item.paymentStatus === 'SELESAI & DIAMBIL';
+                }
+
+                return matchKeyword && matchStatus;
+            });
+
+            renderTable(filtered);
+        };
+
+        // Fungsi Update Status
         window.updateStatus = async function(docId, newStatus) {
             const confirmMsg = newStatus === 'LUNAS' ? "Ubah status transaksi ini menjadi LUNAS?" : "Tandai cucian ini sudah DIAMBIL oleh pelanggan?";
             if (!confirm(confirmMsg)) return;
@@ -170,14 +219,9 @@
             try {
                 const docRef = doc(db, "transactions", docId);
                 if (newStatus === 'LUNAS') {
-                    await updateDoc(docRef, {
-                        paymentStatus: "LUNAS",
-                        remainingAmount: 0
-                    });
+                    await updateDoc(docRef, { paymentStatus: "LUNAS", remainingAmount: 0 });
                 } else if (newStatus === 'DIAMBIL') {
-                    await updateDoc(docRef, {
-                        paymentStatus: "SELESAI & DIAMBIL"
-                    });
+                    await updateDoc(docRef, { paymentStatus: "SELESAI & DIAMBIL" });
                 }
                 alert("Status berhasil diperbarui!");
                 loadTransactions();
@@ -185,6 +229,70 @@
                 console.error("Gagal update status:", err);
                 alert("Terjadi kesalahan saat memperbarui status.");
             }
+        };
+
+        // Fungsi Cetak Ulang Struk (Reprint Receipt 58mm Thermal)
+        window.reprintReceipt = function(encodedData) {
+            const data = JSON.parse(decodeURIComponent(encodedData));
+            const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleString('id-ID') : 'Baru saja';
+            
+            let itemsHtml = '';
+            (data.items || []).forEach((item, idx) => {
+                itemsHtml += `
+                    <div style="margin-bottom: 4px;">
+                        <div><b>${idx + 1}. ${item.category} - ${item.service}</b></div>
+                        <div style="display:flex; justify-content:space-between;">
+                            <span>Brand: ${item.brand} (${item.color})</span>
+                            <span>Rp ${item.price.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            const printWindow = window.open('', '_blank', 'width=300,height=600');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>Struk - SaveYourShoes</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; font-size: 11px; width: 58mm; margin: 0; padding: 5px; color: #000; }
+                        .text-center { text-align: center; }
+                        .bold { font-weight: bold; }
+                        .dashed { border-bottom: 1px dashed #000; margin: 6px 0; }
+                        .flex { display: flex; justify-content: space-between; }
+                    </style>
+                </head>
+                <body>
+                    <div class="text-center bold" style="font-size: 13px;">SAVE YOUR SHOES</div>
+                    <div class="text-center" style="font-size: 9px;">Jl. Bantaran Indah, Malang</div>
+                    <div class="text-center" style="font-size: 9px;">WA: 082326172488</div>
+                    <div class="dashed"></div>
+                    <div>No. Nota : ${data.noTrx || 'SYS-NOTE'}</div>
+                    <div>Waktu    : ${dateStr}</div>
+                    <div>Kasir    : ${data.cashier || 'Admin'}</div>
+                    <div>Pelanggan: ${data.customerName} (${data.customerPhone})</div>
+                    <div class="dashed"></div>
+                    <div class="bold">RINCIAN PESANAN:</div>
+                    ${itemsHtml}
+                    <div class="dashed"></div>
+                    <div class="flex"><span>Total Item:</span><span>${(data.items || []).length}</span></div>
+                    <div class="flex bold" style="font-size: 12px;"><span>TOTAL:</span><span>Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex"><span>Dibayar (${data.paymentMethod}):</span><span>Rp ${(data.paidAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex"><span>Sisa Pembayaran:</span><span>Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')}</span></div>
+                    <div class="flex bold"><span>Status:</span><span>${data.paymentStatus}</span></div>
+                    <div class="dashed"></div>
+                    <div class="text-center" style="font-size: 9px;">Terima kasih telah mempercayakan</div>
+                    <div class="text-center" style="font-size: 9px;">perawatan sepatu & tas Anda di SYS!</div>
+                    <div class="text-center" style="font-size: 9px; margin-top: 5px;">IG: @saveyourshoes_official</div>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.focus();
+            setTimeout(() => {
+                printWindow.print();
+                printWindow.close();
+            }, 500);
         };
     </script>
 </body>
