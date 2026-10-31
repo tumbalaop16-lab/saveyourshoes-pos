@@ -12,15 +12,13 @@ jobs:
     - name: 1. Checkout Repository
       uses: actions/checkout@v4
 
-    - name: 2. Set up Node.js
-      uses: actions/setup-node@v4
+    - name: 2. Generate Android TWA APK
+      uses: PWABuilder/pwabuilder-action@main
       with:
-        node-version: '18'
+        manifest-url: 'https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json'
+        platforms: android
 
-    - name: 3. Generate Android Package with PWABuilder
-      run: npx @pwabuilder/cli generate --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --name "SaveYourShoes POS" --short_name "SaveShoes" --start_url "https://tumbalaop16-lab.github.io/saveyourshoes-pos/" --background_color "#ffffff" --theme_color "#000000" --icon "https://tumbalaop16-lab.github.io/saveyourshoes-pos/icon.png" --platforms android
-
-    - name: 4. Upload APK Artifact
+    - name: 3. Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK
