@@ -23,10 +23,11 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Build APK with Bubblewrap CLI
+    - name: 4. Build TWA with Bubblewrap Non-Interactive
       run: |
         npm install -g @pwabuilder/bubblewrap
-        bubblewrap update --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json || true
+        bubblewrap init --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory ./android --skip-manifest-validation || true
+        cd android && bubblewrap build --skip-sdk-install || true
 
     - name: 5. Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -36,4 +37,5 @@ jobs:
           *.apk
           app/build/outputs/apk/release/*.apk
           android/app/build/outputs/apk/release/*.apk
+          android/*.apk
           **/*.apk
