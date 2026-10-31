@@ -27,9 +27,10 @@ jobs:
       - name: 4. Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: 5. Check Bubblewrap
-        run: bubblewrap --version
-
+      -- name: 5. Check Java and Node.js
+  run: |
+    java -version
+    node --version
       - name: 6. Generate Android Project
         run: |
           bubblewrap init \
