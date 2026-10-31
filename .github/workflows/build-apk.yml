@@ -17,13 +17,10 @@ jobs:
       with:
         node-version: '18'
 
-    - name: 3. Install PWABuilder CLI
-      run: npm install -g @pwabuilder/cli
+    - name: 3. Generate Android Package with PWABuilder
+      run: npx @pwabuilder/cli generate --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --name "SaveYourShoes POS" --short_name "SaveShoes" --start_url "https://tumbalaop16-lab.github.io/saveyourshoes-pos/" --background_color "#ffffff" --theme_color "#000000" --icon "https://tumbalaop16-lab.github.io/saveyourshoes-pos/icon.png" --platforms android
 
-    - name: 4. Generate Android Package
-      run: pwabuilder generate --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --name "SaveYourShoes POS" --short_name "SaveShoes" --start_url "https://tumbalaop16-lab.github.io/saveyourshoes-pos/" --background_color "#ffffff" --theme_color "#000000" --icon "https://tumbalaop16-lab.github.io/saveyourshoes-pos/icon.png" --platforms android
-
-    - name: 5. Upload APK Artifact
+    - name: 4. Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK
