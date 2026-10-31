@@ -23,30 +23,21 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Generate & Compile TWA Project
+    - name: 4. Build Real APK using Bubblewrap
       run: |
         npm install -g @bubblewrap/cli
-        bubblewrap init --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory ./android --skip-manifest-validation || true
         
-        # Buat folder output simulasi agar artifact pasti terdeteksi jika build CLI tertahan
-        mkdir -p android/app/build/outputs/apk/release/
+        # Konfigurasi otomatis project TWA dari manifest
+        bubblewrap init --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory ./android --skip-manifest-validation
         
-        # Jalankan build jika gradle wrapper tersedia
-        if [ -f "./android/gradlew" ]; then
-          cd android && chmod +x gradlew && ./gradlew assembleRelease || true
-        fi
+        # Masuk ke direktori android dan build APK debug/release yang valid
+        cd android
+        ./gradlew assembleRelease
 
-    - name: 5. Ensure APK Exists for Artifact
-      run: |
-        # Buat file placeholder APK jika proses native memerlukan keystore manual, 
-        # tapi idealnya gradle akan menimbunnya jika konfigurasi tuntas.
-        touch saveyourshoes-pos-release.apk
-
-    - name: 6. Upload APK Artifact
+    - name: 5. Upload Real APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK
         path: |
-          *.apk
           android/app/build/outputs/apk/release/*.apk
-          **/*.apk
+          android/app/build/outputs/apk/debug/*.apk
