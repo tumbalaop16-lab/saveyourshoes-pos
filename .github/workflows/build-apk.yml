@@ -1,4 +1,5 @@
-name: Build Web to APK
+- name: PWA Validations
+  uses: appifya/pwa-mobile-app-builder@main
 
 on:
   push:
