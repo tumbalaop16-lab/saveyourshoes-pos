@@ -2,53 +2,39 @@ name: Build Web to APK
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 1. Checkout Repository
-        uses: actions/checkout@v4
+    - name: 1. Checkout Repository
+      uses: actions/checkout@v4
 
-      - name: 2. Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
+    - name: 2. Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
 
-      - name: 3. Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+    - name: 3. Set up Java JDK 17
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '17'
 
-      - name: 4. Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
+    - name: 4. Install Bubblewrap CLI
+      run: npm install -g @pwabuilder/bubblewrap
 
-      - name: 5. Check Environment
-        run: |
-          java -version
-          node --version
-          echo "JAVA_HOME=$JAVA_HOME"
-          echo "ANDROID_HOME=$ANDROID_HOME"
+    - name: 5. Build TWA Project Locally
+      run: |
+        bubblewrap init --manifest ./manifest.json --directory ./android
+        bubblewrap build --directory ./android
 
-      - name: 6. Configure Android SDK
-        run: |
-          bubblewrap updateConfig \
-            --jdkPath="$JAVA_HOME" \
-            --androidSdkPath="$ANDROID_HOME"
-
-      - name: 7. Build Android APK
-        run: bubblewrap build --skipSigning
-
-      - name: 8. Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: SaveYourShoes-APK
-          path: |
-            app-release-unsigned.apk
-            app-release-bundle.aab
-          if-no-files-found: error
+    - name: 6. Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: SaveYourShoes-APK
+        path: |
+          android/app/build/outputs/apk/release/*.apk
+          android/*.apks
