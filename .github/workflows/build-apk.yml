@@ -23,18 +23,16 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    -name: 4. Install Bubblewrap
-        run: npm install -g @bubblewrap/cli
-
-    - name: 5. Build TWA Project Locally
+    - name: 4. Build APK with PWABuilder CLI
       run: |
-        bubblewrap init --manifest ./manifest.json --directory ./android
-        bubblewrap build --directory ./android
+        npm install -g @pwabuilder/cli
+        pwabuilder package --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --name "SaveYourShoes POS" --short_name "SaveShoes" --start_url "https://tumbalaop16-lab.github.io/saveyourshoes-pos/" --background_color "#ffffff" --theme_color "#000000" --icon "https://tumbalaop16-lab.github.io/saveyourshoes-pos/icon.png" --platforms android
 
-    - name: 6. Upload APK Artifact
+    - name: 5. Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK
         path: |
+          *.apk
           android/app/build/outputs/apk/release/*.apk
-          android/*.apks
+          **/*.apk
