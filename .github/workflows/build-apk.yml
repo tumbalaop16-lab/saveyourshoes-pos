@@ -33,11 +33,10 @@ jobs:
           java -version
           node --version
 
-      - name: 6. Generate Android Project
+      - - name: 6. Generate Android Project
         run: |
-          bubblewrap init \
+          printf 'n\n' | bubblewrap init \
             --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json
-
       - name: 7. Build Android APK
         run: bubblewrap build
 
