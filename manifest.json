@@ -1,6 +1,6 @@
 {
   "name": "SaveYourShoes POS",
-  "short_name": "SaveShoesPOS",
+  "short_name": "SaveShoes",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
