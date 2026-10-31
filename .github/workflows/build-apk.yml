@@ -28,24 +28,27 @@ jobs:
       - name: 4. Install Bubblewrap
         run: npm install -g @bubblewrap/cli
 
-      - name: 5. Check Java and Node.js
+      - name: 5. Check Environment
         run: |
           java -version
           node --version
+          echo "JAVA_HOME=$JAVA_HOME"
+          echo "ANDROID_HOME=$ANDROID_HOME"
 
-      - - name: 6. Generate Android Project
+      - name: 6. Configure Android SDK
         run: |
-          printf 'n\n' | bubblewrap init \
-            --manifest=https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json
+          bubblewrap updateConfig \
+            --jdkPath="$JAVA_HOME" \
+            --androidSdkPath="$ANDROID_HOME"
+
       - name: 7. Build Android APK
-        run: bubblewrap build
+        run: bubblewrap build --skipSigning
 
       - name: 8. Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: SaveYourShoes-APK
           path: |
-            app-release-signed.apk
             app-release-unsigned.apk
             app-release-bundle.aab
-          if-no-files-found: warn
+          if-no-files-found: error
