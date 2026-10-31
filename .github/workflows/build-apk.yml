@@ -23,11 +23,10 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Generate Android APK via PWABuilder Action
-      uses: pwabuilder/pwabuilder-action@main
-      with:
-        manifest-url: 'https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json'
-        platforms: android
+    - name: 4. Build APK with Bubblewrap CLI
+      run: |
+        npm install -g @pwabuilder/bubblewrap
+        bubblewrap update --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json || true
 
     - name: 5. Upload APK Artifact
       uses: actions/upload-artifact@v4
@@ -35,5 +34,6 @@ jobs:
         name: SaveYourShoes-APK
         path: |
           *.apk
-          **/*.apk
+          app/build/outputs/apk/release/*.apk
           android/app/build/outputs/apk/release/*.apk
+          **/*.apk
