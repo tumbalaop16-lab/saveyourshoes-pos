@@ -23,9 +23,9 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Build TWA with Bubblewrap Non-Interactive
+    - name: 4. Build APK with Official Bubblewrap CLI
       run: |
-        npm install -g @pwabuilder/bubblewrap
+        npm install -g @bubblewrap/cli
         bubblewrap init --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory ./android --skip-manifest-validation || true
         cd android && bubblewrap build --skip-sdk-install || true
 
