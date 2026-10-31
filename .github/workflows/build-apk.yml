@@ -23,8 +23,8 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Install Bubblewrap CLI
-      run: npm install -g @pwabuilder/bubblewrap
+    -name: 4. Install Bubblewrap
+        run: npm install -g @bubblewrap/cli
 
     - name: 5. Build TWA Project Locally
       run: |
