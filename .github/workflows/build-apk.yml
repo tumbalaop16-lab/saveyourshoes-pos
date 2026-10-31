@@ -17,21 +17,13 @@ jobs:
       with:
         node-version: '18'
 
-    - name: 3. Set up Java JDK 17
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+    - name: 3. Generate Android Package with PWABuilder
+      run: npx @pwabuilder/cli generate --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --name "SaveYourShoes POS" --short_name "SaveShoes" --start_url "https://tumbalaop16-lab.github.io/saveyourshoes-pos/" --background_color "#ffffff" --theme_color "#000000" --icon "https://tumbalaop16-lab.github.io/saveyourshoes-pos/icon.png" --platforms android
 
-    - name: 4. Build TWA APK with Bubblewrap
-      uses: googlechromelabs/bubblewrap-action@v1
-      with:
-        manifest-url: 'https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json'
-
-    - name: 5. Upload APK Artifact
+    - name: 4. Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK
         path: |
           *.apk
-          app/build/outputs/apk/release/*.apk
+          android/app/build/outputs/apk/release/*.apk
