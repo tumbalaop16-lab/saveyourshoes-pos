@@ -1,78 +1,128 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaveYourShoes POS</title>
-  
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f9;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    h2 { color: #333; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 10px;
-      text-align: left;
-      font-size: 14px;
-    }
-    th { background-color: #007bff; color: white; }
-    button {
-      padding: 6px 12px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background-color: #218838; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - SaveYourShoes POS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
 
-  <div class="container">
-    <h2>SaveYourShoes POS - Dashboard</h2>
-    <p>Sistem Point of Sale Cuci Sepatu.</p>
+    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-slate-200">
+        
+        <!-- Header & Logo Brand -->
+        <div class="text-center mb-6">
+            <div class="flex justify-center mb-3">
+                <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-md border-4 border-white">
+                    <span class="text-2xl font-black tracking-wider">SYS</span>
+                </div>
+            </div>
+            <h1 class="text-xl font-extrabold text-slate-800 tracking-wide">SAVE YOUR SHOES</h1>
+            <p class="text-xs font-medium text-slate-500 mt-0.5">Sistem Kasir & Operasional Service</p>
+            
+            <!-- Kontak & Sosmed -->
+            <div class="mt-3 text-[11px] text-slate-500 space-y-0.5">
+                <p>📞 WA: 082326172488</p>
+                <p>IG: @saveyourshoes_official | TikTok: @saveyourshoesofficial</p>
+            </div>
+        </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID Pesanan</th>
-          <th>Pelanggan</th>
-          <th>Total</th>
-          <th>Status</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>ORD-001</td>
-          <td>Budi Santoso</td>
-          <td>Rp 75.000</td>
-          <td>Proses Cuci</td>
-          <td>
-            <button onclick="alert('Cetak Nota')">🖨️ Cetak</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+        <!-- Form Login -->
+        <form id="login-form" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Username / ID Pengguna</label>
+                <input type="text" id="username" placeholder="Contoh: kasir1, admin, atau owner" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
+                <input type="password" id="password" placeholder="Masukkan password" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
+            </div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-md text-sm flex items-center justify-center space-x-2">
+                <span>🚪 Masuk</span>
+            </button>
+        </form>
+        
+        <!-- Pesan Error -->
+        <p id="error-msg" class="text-red-500 text-xs mt-4 text-center font-medium hidden"></p>
+    </div>
 
+    <!-- Firebase SDK & Script Login -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
+            authDomain: "saveyourshoes-pos.firebaseapp.com",
+            projectId: "saveyourshoes-pos",
+            storageBucket: "saveyourshoes-pos.firebasestorage",
+            messagingSenderId: "414855345556",
+            appId: "1:414855345556:web:f049e8b69ae9aef3068b81"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const loginForm = document.getElementById('login-form');
+        const errorMsg = document.getElementById('error-msg');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const inputVal = document.getElementById('username').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            errorMsg.classList.add('hidden');
+
+            // Otomatis menambahkan ekstensi domain jika user hanya mengetik nama biasa
+            const emailToUse = inputVal.includes('@') ? inputVal : `${inputVal}@saveyourshoes.com`;
+
+            try {
+                // Proses autentikasi Firebase
+                const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
+                const user = userCredential.user;
+
+                let userRole = null;
+
+                // 1. Cek role berdasarkan UID dokumen Firestore
+                const docByUid = await getDoc(doc(db, "users", user.uid));
+                if (docByUid.exists() && docByUid.data().role) {
+                    userRole = docByUid.data().role.toLowerCase();
+                }
+
+                // 2. Jika belum ketemu, cek berdasarkan ID dokumen berupa email
+                if (!userRole) {
+                    const docByEmail = await getDoc(doc(db, "users", user.email.toLowerCase()));
+                    if (docByEmail.exists() && docByEmail.data().role) {
+                        userRole = docByEmail.data().role.toLowerCase();
+                    }
+                }
+
+                // 3. Jika masih belum ketemu, cari via query field email
+                if (!userRole) {
+                    const q = query(collection(db, "users"), where("email", "==", user.email.toLowerCase()));
+                    const querySnap = await getDocs(q);
+                    if (!querySnap.empty) {
+                        userRole = querySnap.docs[0].data().role.toLowerCase();
+                    }
+                }
+
+                // Pengalihan halaman sesuai role
+                if (userRole === 'owner') {
+                    window.location.href = "owner.html";
+                } else if (userRole === 'admin') {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "cashier.html";
+                }
+
+            } catch (error) {
+                console.error("Login error:", error);
+                errorMsg.textContent = "Gagal Masuk: Periksa kembali Username dan Kata Sandi Anda.";
+                errorMsg.classList.remove('hidden');
+            }
+        });
+    </script>
 </body>
 </html>
