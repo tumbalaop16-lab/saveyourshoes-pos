@@ -1,129 +1,211 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SaveYourShoes POS</title>
-    <link rel="manifest" href="manifest.json">
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaveYourShoes POS - Kasir Dashboard</title>
+  
+  <!-- CSS Utama -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 { color: #333; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th { background-color: #007bff; color: white; }
+    button {
+      padding: 6px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover { background-color: #218838; }
+    select { padding: 5px; border-radius: 4px; }
+
+    /* Sembunyikan elemen nota pada layar normal */
+    .hidden-on-screen {
+      display: none !important;
+    }
+
+    /* Aturan CSS Khusus Printer Thermal / Cetak Nota */
+    @media print {
+      body * {
+        visibility: hidden !important;
+      }
+      #receipt-print-area, #receipt-print-area * {
+        visibility: visible !important;
+      }
+      #receipt-print-area {
+        display: block !important;
+        position: absolute !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: 100% !important;
+      }
+    }
+  </style>
 </head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen p-4">
+<body>
 
-    <div class="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-slate-200">
-        
-        <!-- Header & Logo Brand -->
-        <div class="text-center mb-6">
-            <div class="flex justify-center mb-3">
-                <div class="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-md border-4 border-white">
-                    <span class="text-2xl font-black tracking-wider">SYS</span>
-                </div>
-            </div>
-            <h1 class="text-xl font-extrabold text-slate-800 tracking-wide">SAVE YOUR SHOES</h1>
-            <p class="text-xs font-medium text-slate-500 mt-0.5">Sistem Kasir & Operasional Service</p>
-            
-            <!-- Kontak & Sosmed -->
-            <div class="mt-3 text-[11px] text-slate-500 space-y-0.5">
-                <p>📞 WA: 082326172488</p>
-                <p>IG: @saveyourshoes_official | TikTok: @saveyourshoesofficial</p>
-            </div>
-        </div>
+  <div class="container">
+    <h2>Dashboard Kasir - SaveYourShoes POS</h2>
+    <p>Kelola status cucian sepatu dan cetak ulang nota dengan mudah.</p>
 
-        <!-- Form Login -->
-        <form id="login-form" class="space-y-4">
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Username / ID Pengguna</label>
-                <input type="text" id="username" placeholder="Contoh: kasir1, admin, atau owner" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
-            </div>
-            <div>
-                <label class="block text-xs font-semibold text-slate-600 mb-1">Password</label>
-                <input type="password" id="password" placeholder="Masukkan password" required class="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50">
-            </div>
-            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition shadow-md text-sm flex items-center justify-center space-x-2">
-                <span>🚪 Masuk</span>
-            </button>
-        </form>
-        
-        <!-- Pesan Error -->
-        <p id="error-msg" class="text-red-500 text-xs mt-4 text-center font-medium hidden"></p>
+    <!-- Tabel Daftar Pesanan -->
+    <table>
+      <thead>
+        <tr>
+          <th>ID Pesanan</th>
+          <th>Pelanggan</th>
+          <th>Total</th>
+          <th>Status Proses</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="orders-table-body">
+        <!-- Data pesanan akan dimasukkan via JavaScript/Firebase -->
+        <tr>
+          <td>ORD-001</td>
+          <td>Budi Santoso</td>
+          <td>Rp 75.000</td>
+          <td>
+            <select onchange="updateShoeStatus('ORD-001', this.value)">
+              <option value="Diterima">Diterima</option>
+              <option value="Proses Cuci" selected>Proses Cuci</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Sudah Diambil">Sudah Diambil</option>
+            </select>
+          </td>
+          <td>
+            <button onclick="printReceipt('ORD-001')">🖨️ Cetak Nota</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- AREA NOTA KHUSUS CETAK (Tercetak Saat window.print() Dipanggil) -->
+  <div id="receipt-print-area" class="hidden-on-screen">
+    <div style="width: 280px; font-family: 'Courier New', Courier, monospace; padding: 10px; color: #000;">
+      <h3 style="text-align: center; margin: 0;">SaveYourShoes POS</h3>
+      <p style="text-align: center; font-size: 12px; margin: 4px 0;">Jasa Cuci & Perawatan Sepatu<br>Telp: 0812-3456-7890</p>
+      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+      
+      <div style="font-size: 12px; line-height: 1.4;">
+        <p style="margin: 2px 0;"><strong>No. Nota:</strong> <span id="receipt-id">-</span></p>
+        <p style="margin: 2px 0;"><strong>Tanggal:</strong> <span id="receipt-date">-</span></p>
+        <p style="margin: 2px 0;"><strong>Pelanggan:</strong> <span id="receipt-customer">-</span></p>
+      </div>
+      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+      
+      <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
+        <thead>
+          <tr style="border-bottom: 1px dashed #000;">
+            <th style="padding-bottom: 4px; background: none; color: black; border: none;">Layanan / Sepatu</th>
+            <th style="text-align: right; padding-bottom: 4px; background: none; color: black; border: none;">Harga</th>
+          </tr>
+        </thead>
+        <tbody id="receipt-items">
+          <!-- Item diisi otomatis via JS -->
+          <tr>
+            <td style="padding: 2px 0; border: none;">Deep Cleaning (Nike Air Force)</td>
+            <td style="text-align: right; padding: 2px 0; border: none;">Rp 75.000</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+      <div style="font-size: 12px; text-align: right; line-height: 1.4;">
+        <p style="margin: 2px 0;"><strong>Total: Rp <span id="receipt-total">75.000</span></strong></p>
+        <p style="margin: 2px 0;">Status: <strong><span id="receipt-status">Proses Cuci</span></strong></p>
+      </div>
+      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
+      <p style="text-align: center; font-size: 11px; margin-top: 10px;">Terima kasih telah mencuci di tempat kami!</p>
     </div>
+  </div>
 
-    <!-- Firebase SDK & Script Login -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  <!-- Script Logika Firebase & Fungsi Kasir -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
-            authDomain: "saveyourshoes-pos.firebaseapp.com",
-            projectId: "saveyourshoes-pos",
-            storageBucket: "saveyourshoes-pos.firebasestorage",
-            messagingSenderId: "414855345556",
-            appId: "1:414855345556:web:f049e8b69ae9aef3068b81"
-        };
+    // Konfigurasi Firebase Anda (Sesuaikan dengan project Anda jika belum ada)
+    const firebaseConfig = {
+      apiKey: "GANTI_DENGAN_API_KEY_ANDA",
+      authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
+      projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
+      storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
+      messagingSenderId: "GANTI_DENGAN_MESSAGING_SENDER_ID_ANDA",
+      appId: "GANTI_DENGAN_APP_ID_ANDA"
+    };
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-        const loginForm = document.getElementById('login-form');
-        const errorMsg = document.getElementById('error-msg');
-
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const inputVal = document.getElementById('username').value.trim().toLowerCase();
-            const password = document.getElementById('password').value;
-            errorMsg.classList.add('hidden');
-
-            // Otomatis menambahkan ekstensi domain jika user hanya mengetik nama biasa
-            const emailToUse = inputVal.includes('@') ? inputVal : `${inputVal}@saveyourshoes.com`;
-
-            try {
-                // Proses autentikasi Firebase
-                const userCredential = await signInWithEmailAndPassword(auth, emailToUse, password);
-                const user = userCredential.user;
-
-                let userRole = null;
-
-                // 1. Cek role berdasarkan UID dokumen Firestore
-                const docByUid = await getDoc(doc(db, "users", user.uid));
-                if (docByUid.exists() && docByUid.data().role) {
-                    userRole = docByUid.data().role.toLowerCase();
-                }
-
-                // 2. Jika belum ketemu, cek berdasarkan ID dokumen berupa email
-                if (!userRole) {
-                    const docByEmail = await getDoc(doc(db, "users", user.email.toLowerCase()));
-                    if (docByEmail.exists() && docByEmail.data().role) {
-                        userRole = docByEmail.data().role.toLowerCase();
-                    }
-                }
-
-                // 3. Jika masih belum ketemu, cari via query field email
-                if (!userRole) {
-                    const q = query(collection(db, "users"), where("email", "==", user.email.toLowerCase()));
-                    const querySnap = await getDocs(q);
-                    if (!querySnap.empty) {
-                        userRole = querySnap.docs[0].data().role.toLowerCase();
-                    }
-                }
-
-                // Pengalihan halaman sesuai role
-                if (userRole === 'owner') {
-                    window.location.href = "owner.html";
-                } else if (userRole === 'admin') {
-                    window.location.href = "admin.html";
-                } else {
-                    window.location.href = "cashier.html";
-                }
-
-            } catch (error) {
-                console.error("Login error:", error);
-                errorMsg.textContent = "Gagal Masuk: Periksa kembali Username dan Kata Sandi Anda.";
-                errorMsg.classList.remove('hidden');
-            }
+    // 1. FUNGSI MENGGANTI STATUS PROSES SEPATU
+    window.updateShoeStatus = async function(orderId, newStatus) {
+      try {
+        const orderRef = doc(db, "orders", orderId);
+        await updateDoc(orderRef, {
+          status: newStatus,
+          updatedAt: new Date()
         });
-    </script>
+        alert(`Status pesanan ${orderId} berhasil diubah ke: ${newStatus}`);
+      } catch (error) {
+        console.error("Gagal mengubah status:", error);
+        alert("Gagal mengubah status pesanan. Pastikan Anda sudah terhubung ke database.");
+      }
+    };
+
+    // 2. FUNGSI CETAK ULANG NOTA
+    window.printReceipt = async function(orderId) {
+      try {
+        const orderRef = doc(db, "orders", orderId);
+        const orderSnap = await getDoc(orderRef);
+
+        if (orderSnap.exists()) {
+          const data = orderSnap.data();
+          document.getElementById("receipt-id").innerText = orderId;
+          document.getElementById("receipt-date").innerText = data.createdAt?.seconds 
+            ? new Date(data.createdAt.seconds * 1000).toLocaleDateString("id-ID")
+            : new Date().toLocaleDateString("id-ID");
+          document.getElementById("receipt-customer").innerText = data.customerName || "Pelanggan";
+          document.getElementById("receipt-total").innerText = Number(data.totalAmount || 75000).toLocaleString("id-ID");
+          document.getElementById("receipt-status").innerText = data.status || "Proses Cuci";
+        }
+
+        // Jalankan perintah cetak printer browser / thermal
+        window.print();
+      } catch (error) {
+        console.error("Gagal mengambil data nota:", error);
+        // Tetap cetak menggunakan data dummy jika offline/testing
+        window.print();
+      }
+    };
+  </script>
+
 </body>
 </html>
