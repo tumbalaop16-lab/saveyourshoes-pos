@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaveYourShoes POS - Kasir Dashboard</title>
+  <title>SaveYourShoes POS - Login & Kasir</title>
   
-  <!-- CSS Utama -->
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -21,7 +20,47 @@
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    h2 { color: #333; margin-top: 0; }
+    .auth-box {
+      max-width: 400px;
+      margin: 50px auto;
+      background: #ffffff;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background-color: #0056b3; }
+    .btn-action {
+      width: auto;
+      padding: 6px 12px;
+      background-color: #28a745;
+    }
+    .btn-action:hover { background-color: #218838; }
+    .btn-danger {
+      background-color: #dc3545;
+      width: auto;
+      padding: 6px 12px;
+      float: right;
+    }
+    .btn-danger:hover { background-color: #c82333; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -34,30 +73,14 @@
       font-size: 14px;
     }
     th { background-color: #007bff; color: white; }
-    button {
-      padding: 6px 12px;
-      background-color: #28a745;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background-color: #218838; }
     select { padding: 5px; border-radius: 4px; }
-
-    /* Sembunyikan elemen nota pada layar normal */
-    .hidden-on-screen {
-      display: none !important;
-    }
+    
+    .hidden { display: none !important; }
 
     /* Aturan CSS Khusus Printer Thermal / Cetak Nota */
     @media print {
-      body * {
-        visibility: hidden !important;
-      }
-      #receipt-print-area, #receipt-print-area * {
-        visibility: visible !important;
-      }
+      body * { visibility: hidden !important; }
+      #receipt-print-area, #receipt-print-area * { visibility: visible !important; }
       #receipt-print-area {
         display: block !important;
         position: absolute !important;
@@ -70,11 +93,27 @@
 </head>
 <body>
 
-  <div class="container">
-    <h2>Dashboard Kasir - SaveYourShoes POS</h2>
-    <p>Kelola status cucian sepatu dan cetak ulang nota langsung dari database.</p>
+  <!-- HALAMAN LOGIN -->
+  <div id="login-section" class="auth-box">
+    <h2>Login Kasir</h2>
+    <p style="color: #666; font-size: 14px;">SaveYourShoes POS</p>
+    <form id="login-form" onsubmit="handleLogin(event)">
+      <input type="email" id="login-email" placeholder="Email Kasir" required>
+      <input type="password" id="login-password" placeholder="Password" required>
+      <button type="submit">Masuk</button>
+    </form>
+    <p id="login-error" style="color: red; font-size: 13px; margin-top: 10px;"></p>
+  </div>
 
-    <!-- Tabel Daftar Pesanan -->
+  <!-- DASHBOARD KASIR (Disembunyikan sebelum login berhasil) -->
+  <div id="dashboard-section" class="container hidden">
+    <div>
+      <h2>Dashboard Kasir - SaveYourShoes POS</h2>
+      <button onclick="handleLogout()" class="btn-danger">Logout</button>
+      <p>Kelola status cucian sepatu dan cetak ulang nota.</p>
+    </div>
+    <div style="clear: both;"></div>
+
     <table>
       <thead>
         <tr>
@@ -86,16 +125,13 @@
         </tr>
       </thead>
       <tbody id="orders-table-body">
-        <!-- Data pesanan akan dimuat otomatis via JavaScript dari Firestore -->
-        <tr>
-          <td colspan="5" style="text-align: center;">Menghubungkan ke database...</td>
-        </tr>
+        <tr><td colspan="5" style="text-align: center;">Memuat data...</td></tr>
       </tbody>
     </table>
   </div>
 
-  <!-- AREA NOTA KHUSUS CETAK (Tercetak Saat window.print() Dipanggil) -->
-  <div id="receipt-print-area" class="hidden-on-screen">
+  <!-- AREA NOTA KHUSUS CETAK -->
+  <div id="receipt-print-area" class="hidden">
     <div style="width: 280px; font-family: 'Courier New', Courier, monospace; padding: 10px; color: #000;">
       <h3 style="text-align: center; margin: 0;">SaveYourShoes POS</h3>
       <p style="text-align: center; font-size: 12px; margin: 4px 0;">Jasa Cuci & Perawatan Sepatu<br>Telp: 0812-3456-7890</p>
@@ -111,13 +147,11 @@
       <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
         <thead>
           <tr style="border-bottom: 1px dashed #000;">
-            <th style="padding-bottom: 4px; background: none; color: black; border: none;">Layanan / Sepatu</th>
+            <th style="padding-bottom: 4px; background: none; color: black; border: none;">Layanan</th>
             <th style="text-align: right; padding-bottom: 4px; background: none; color: black; border: none;">Harga</th>
           </tr>
         </thead>
-        <tbody id="receipt-items">
-          <!-- Item diisi otomatis via JS -->
-        </tbody>
+        <tbody id="receipt-items"></tbody>
       </table>
       
       <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
@@ -130,12 +164,13 @@
     </div>
   </div>
 
-  <!-- Script Logika Firebase & Fungsi Kasir -->
+  <!-- SCRIPT FIREBASE & AUTENTIKASI -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
     import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Konfigurasi Firebase Anda (Pastikan sesuai dengan project Anda)
+    // Konfigurasi Firebase Anda
     const firebaseConfig = {
       apiKey: "GANTI_DENGAN_API_KEY_ANDA",
       authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
@@ -146,19 +181,52 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 1. FUNGSI UNTUK MEMUAT DATA PESANAN DARI FIRESTORE KE TABEL
+    // Pantau Status Login Pengguna
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Jika sudah login, tampilkan dashboard dan muat data
+        document.getElementById("login-section").classList.add("hidden");
+        document.getElementById("dashboard-section").classList.remove("hidden");
+        loadOrders();
+      } else {
+        // Jika belum login, tampilkan halaman login
+        document.getElementById("login-section").classList.remove("hidden");
+        document.getElementById("dashboard-section").classList.add("hidden");
+      }
+    });
+
+    // Fungsi Login
+    window.handleLogin = async function(event) {
+      event.preventDefault();
+      const email = document.getElementById("login-email").value;
+      const password = document.getElementById("login-password").value;
+      const errorText = document.getElementById("login-error");
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        errorText.innerText = "";
+      } catch (error) {
+        errorText.innerText = "Gagal login: Periksa kembali email dan password Anda.";
+      }
+    };
+
+    // Fungsi Logout
+    window.handleLogout = async function() {
+      await signOut(auth);
+    };
+
+    // Memuat Data Pesanan
     async function loadOrders() {
       const tableBody = document.getElementById("orders-table-body");
-      tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Memuat data pesanan...</td></tr>`;
-
       try {
         const querySnapshot = await getDocs(collection(db, "orders"));
         tableBody.innerHTML = "";
 
         if (querySnapshot.empty) {
-          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Belum ada data pesanan di database.</td></tr>`;
+          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Belum ada data pesanan.</td></tr>`;
           return;
         }
 
@@ -170,84 +238,4 @@
           row.innerHTML = `
             <td>${orderId}</td>
             <td>${data.customerName || "Pelanggan"}</td>
-            <td>Rp ${Number(data.totalAmount || 0).toLocaleString("id-ID")}</td>
             <td>
-              <select onchange="updateShoeStatus('${orderId}', this.value)">
-                <option value="Diterima" ${data.status === "Diterima" ? "selected" : ""}>Diterima</option>
-                <option value="Proses Cuci" ${data.status === "Proses Cuci" ? "selected" : ""}>Proses Cuci</option>
-                <option value="Selesai" ${data.status === "Selesai" ? "selected" : ""}>Selesai</option>
-                <option value="Sudah Diambil" ${data.status === "Sudah Diambil" ? "selected" : ""}>Sudah Diambil</option>
-              </select>
-            </td>
-            <td>
-              <button onclick="printReceipt('${orderId}')">🖨️ Cetak Nota</button>
-            </td>
-          `;
-          tableBody.appendChild(row);
-        });
-      } catch (error) {
-        console.error("Gagal memuat data:", error);
-        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Gagal memuat data dari database. Periksa konfigurasi Firebase Anda.</td></tr>`;
-      }
-    }
-
-    // 2. FUNGSI MENGGANTI STATUS PROSES SEPATU
-    window.updateShoeStatus = async function(orderId, newStatus) {
-      try {
-        const orderRef = doc(db, "orders", orderId);
-        await updateDoc(orderRef, {
-          status: newStatus,
-          updatedAt: new Date()
-        });
-        alert(`Status pesanan ${orderId} berhasil diubah ke: ${newStatus}`);
-      } catch (error) {
-        console.error("Gagal mengubah status:", error);
-        alert("Gagal mengubah status pesanan.");
-      }
-    };
-
-    // 3. FUNGSI CETAK ULANG NOTA
-    window.printReceipt = async function(orderId) {
-      try {
-        const orderRef = doc(db, "orders", orderId);
-        const orderSnap = await getDoc(orderRef);
-
-        if (orderSnap.exists()) {
-          const data = orderSnap.data();
-          document.getElementById("receipt-id").innerText = orderId;
-          document.getElementById("receipt-date").innerText = data.createdAt?.seconds 
-            ? new Date(data.createdAt.seconds * 1000).toLocaleDateString("id-ID")
-            : new Date().toLocaleDateString("id-ID");
-          document.getElementById("receipt-customer").innerText = data.customerName || "Pelanggan";
-          document.getElementById("receipt-total").innerText = Number(data.totalAmount || 0).toLocaleString("id-ID");
-          document.getElementById("receipt-status").innerText = data.status || "Proses Cuci";
-
-          // Render item layanan di nota
-          const itemsTbody = document.getElementById("receipt-items");
-          itemsTbody.innerHTML = "";
-          if (data.items && Array.isArray(data.items)) {
-            data.items.forEach(item => {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td style="padding: 2px 0; border: none;">${item.serviceName} (${item.shoeBrand || "Sepatu"})</td>
-                <td style="text-align: right; padding: 2px 0; border: none;">Rp ${Number(item.price).toLocaleString("id-ID")}</td>
-              `;
-              itemsTbody.appendChild(tr);
-            });
-          }
-        }
-
-        // Jalankan perintah cetak printer browser / thermal
-        window.print();
-      } catch (error) {
-        console.error("Gagal mengambil data nota:", error);
-        alert("Gagal memuat detail nota untuk dicetak.");
-      }
-    };
-
-    // Jalankan pemuatan data saat halaman dibuka
-    loadOrders();
-  </script>
-
-</body>
-</html>
