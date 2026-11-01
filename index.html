@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SaveYourShoes POS - Login & Kasir</title>
+  <title>SaveYourShoes POS</title>
   
   <style>
     body {
@@ -13,54 +13,14 @@
       padding: 20px;
     }
     .container {
-      max-width: 900px;
+      max-width: 800px;
       margin: 0 auto;
       background: #ffffff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .auth-box {
-      max-width: 400px;
-      margin: 50px auto;
-      background: #ffffff;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    button:hover { background-color: #0056b3; }
-    .btn-action {
-      width: auto;
-      padding: 6px 12px;
-      background-color: #28a745;
-    }
-    .btn-action:hover { background-color: #218838; }
-    .btn-danger {
-      background-color: #dc3545;
-      width: auto;
-      padding: 6px 12px;
-      float: right;
-    }
-    .btn-danger:hover { background-color: #c82333; }
+    h2 { color: #333; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -73,46 +33,22 @@
       font-size: 14px;
     }
     th { background-color: #007bff; color: white; }
-    select { padding: 5px; border-radius: 4px; }
-    
-    .hidden { display: none !important; }
-
-    /* Aturan CSS Khusus Printer Thermal / Cetak Nota */
-    @media print {
-      body * { visibility: hidden !important; }
-      #receipt-print-area, #receipt-print-area * { visibility: visible !important; }
-      #receipt-print-area {
-        display: block !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-      }
+    button {
+      padding: 6px 12px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
     }
+    button:hover { background-color: #218838; }
   </style>
 </head>
 <body>
 
-  <!-- HALAMAN LOGIN -->
-  <div id="login-section" class="auth-box">
-    <h2>Login Kasir</h2>
-    <p style="color: #666; font-size: 14px;">SaveYourShoes POS</p>
-    <form id="login-form" onsubmit="handleLogin(event)">
-      <input type="email" id="login-email" placeholder="Email Kasir" required>
-      <input type="password" id="login-password" placeholder="Password" required>
-      <button type="submit">Masuk</button>
-    </form>
-    <p id="login-error" style="color: red; font-size: 13px; margin-top: 10px;"></p>
-  </div>
-
-  <!-- DASHBOARD KASIR (Disembunyikan sebelum login berhasil) -->
-  <div id="dashboard-section" class="container hidden">
-    <div>
-      <h2>Dashboard Kasir - SaveYourShoes POS</h2>
-      <button onclick="handleLogout()" class="btn-danger">Logout</button>
-      <p>Kelola status cucian sepatu dan cetak ulang nota.</p>
-    </div>
-    <div style="clear: both;"></div>
+  <div class="container">
+    <h2>SaveYourShoes POS - Dashboard</h2>
+    <p>Sistem Point of Sale Cuci Sepatu.</p>
 
     <table>
       <thead>
@@ -120,122 +56,23 @@
           <th>ID Pesanan</th>
           <th>Pelanggan</th>
           <th>Total</th>
-          <th>Status Proses</th>
+          <th>Status</th>
           <th>Aksi</th>
         </tr>
       </thead>
-      <tbody id="orders-table-body">
-        <tr><td colspan="5" style="text-align: center;">Memuat data...</td></tr>
+      <tbody>
+        <tr>
+          <td>ORD-001</td>
+          <td>Budi Santoso</td>
+          <td>Rp 75.000</td>
+          <td>Proses Cuci</td>
+          <td>
+            <button onclick="alert('Cetak Nota')">🖨️ Cetak</button>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- AREA NOTA KHUSUS CETAK -->
-  <div id="receipt-print-area" class="hidden">
-    <div style="width: 280px; font-family: 'Courier New', Courier, monospace; padding: 10px; color: #000;">
-      <h3 style="text-align: center; margin: 0;">SaveYourShoes POS</h3>
-      <p style="text-align: center; font-size: 12px; margin: 4px 0;">Jasa Cuci & Perawatan Sepatu<br>Telp: 0812-3456-7890</p>
-      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-      
-      <div style="font-size: 12px; line-height: 1.4;">
-        <p style="margin: 2px 0;"><strong>No. Nota:</strong> <span id="receipt-id">-</span></p>
-        <p style="margin: 2px 0;"><strong>Tanggal:</strong> <span id="receipt-date">-</span></p>
-        <p style="margin: 2px 0;"><strong>Pelanggan:</strong> <span id="receipt-customer">-</span></p>
-      </div>
-      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-      
-      <table style="width: 100%; font-size: 12px; text-align: left; border-collapse: collapse;">
-        <thead>
-          <tr style="border-bottom: 1px dashed #000;">
-            <th style="padding-bottom: 4px; background: none; color: black; border: none;">Layanan</th>
-            <th style="text-align: right; padding-bottom: 4px; background: none; color: black; border: none;">Harga</th>
-          </tr>
-        </thead>
-        <tbody id="receipt-items"></tbody>
-      </table>
-      
-      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-      <div style="font-size: 12px; text-align: right; line-height: 1.4;">
-        <p style="margin: 2px 0;"><strong>Total: Rp <span id="receipt-total">0</span></strong></p>
-        <p style="margin: 2px 0;">Status: <strong><span id="receipt-status">-</span></strong></p>
-      </div>
-      <div style="border-top: 1px dashed #000; margin: 8px 0;"></div>
-      <p style="text-align: center; font-size: 11px; margin-top: 10px;">Terima kasih telah mencuci di tempat kami!</p>
-    </div>
-  </div>
-
-  <!-- SCRIPT FIREBASE & AUTENTIKASI -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // Konfigurasi Firebase Anda
-    const firebaseConfig = {
-      apiKey: "GANTI_DENGAN_API_KEY_ANDA",
-      authDomain: "GANTI_DENGAN_AUTH_DOMAIN_ANDA",
-      projectId: "GANTI_DENGAN_PROJECT_ID_ANDA",
-      storageBucket: "GANTI_DENGAN_STORAGE_BUCKET_ANDA",
-      messagingSenderId: "GANTI_DENGAN_MESSAGING_SENDER_ID_ANDA",
-      appId: "GANTI_DENGAN_APP_ID_ANDA"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Pantau Status Login Pengguna
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // Jika sudah login, tampilkan dashboard dan muat data
-        document.getElementById("login-section").classList.add("hidden");
-        document.getElementById("dashboard-section").classList.remove("hidden");
-        loadOrders();
-      } else {
-        // Jika belum login, tampilkan halaman login
-        document.getElementById("login-section").classList.remove("hidden");
-        document.getElementById("dashboard-section").classList.add("hidden");
-      }
-    });
-
-    // Fungsi Login
-    window.handleLogin = async function(event) {
-      event.preventDefault();
-      const email = document.getElementById("login-email").value;
-      const password = document.getElementById("login-password").value;
-      const errorText = document.getElementById("login-error");
-
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-        errorText.innerText = "";
-      } catch (error) {
-        errorText.innerText = "Gagal login: Periksa kembali email dan password Anda.";
-      }
-    };
-
-    // Fungsi Logout
-    window.handleLogout = async function() {
-      await signOut(auth);
-    };
-
-    // Memuat Data Pesanan
-    async function loadOrders() {
-      const tableBody = document.getElementById("orders-table-body");
-      try {
-        const querySnapshot = await getDocs(collection(db, "orders"));
-        tableBody.innerHTML = "";
-
-        if (querySnapshot.empty) {
-          tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Belum ada data pesanan.</td></tr>`;
-          return;
-        }
-
-        querySnapshot.forEach((documentSnapshot) => {
-          const data = documentSnapshot.data();
-          const orderId = documentSnapshot.id;
-
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${orderId}</td>
-            <td>${data.customerName || "Pelanggan"}</td>
-            <td>
+</body>
+</html>
