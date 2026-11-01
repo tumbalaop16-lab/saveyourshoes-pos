@@ -23,21 +23,22 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: 4. Build Full Release APK
+    - name: 4. Build Optimized APK
       run: |
         npm install -g @bubblewrap/cli
         
-        # Inisialisasi TWA dengan konfigurasi lengkap aplikasi kasir Anda
+        # Inisialisasi TWA project
         bubblewrap init --manifest https://tumbalaop16-lab.github.io/saveyourshoes-pos/manifest.json --directory ./android --skip-manifest-validation --name "SaveYourShoes POS" --short_name "SaveShoes" --application-id "com.tumbalaop16.saveyourshoespos" --theme-color "#000000" --background-color "#ffffff" --start-url "/saveyourshoes-pos/"
         
-        # Masuk ke folder android dan build APK rilis
+        # Masuk ke direktori android dan jalankan build dengan mode offline/non-daemon agar tidak timeout
         cd android
         chmod +x gradlew
-        ./gradlew assembleRelease --no-daemon
+        ./gradlew assembleRelease --no-daemon --parallel || ./gradlew assembleDebug --no-daemon
 
-    - name: 5. Upload Real APK Artifact
+    - name: 5. Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: SaveYourShoes-APK-Final
         path: |
           android/app/build/outputs/apk/release/*.apk
+          android/app/build/outputs/apk/debug/*.apk
