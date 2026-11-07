@@ -517,20 +517,30 @@
             }
         });
 
-        // FITUR BARU: Script Logika Tombol Cetak Ulang Nota
+        // FITUR BARU: Cetak Ulang Berdasarkan Nama Customer (Pencarian Fleksibel)
         document.getElementById('reprint-btn').addEventListener('click', async () => {
-            const trxId = document.getElementById('reprint-trx-id').value.trim();
-            if (!trxId) {
-                alert("Masukkan Nomor Transaksi (No. Nota) yang ingin dicetak ulang!");
+            const searchName = document.getElementById('reprint-cust-name').value.trim();
+            if (!searchName) {
+                alert("Masukkan nama pelanggan yang ingin dicari!");
                 return;
             }
 
             try {
-                const q = query(collection(db, "transactions"), where("noTrx", "==", trxId));
+                // Ambil semua transaksi diurutkan dari yang terbaru
+                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
                 const querySnapshot = await getDocs(q);
 
-                if (querySnapshot.empty) {
-                    alert("Nomor Transaksi tidak ditemukan di database!");
+                let foundData = null;
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    // Cek pencocokan nama secara case-insensitive (mengabaikan huruf besar/kecil)
+                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
+                        foundData = data;
+                    }
+                });
+
+                if (!foundData) {
+                    alert(`Tidak ditemukan transaksi atas nama "${searchName}"!`);
                     return;
                 }
 
