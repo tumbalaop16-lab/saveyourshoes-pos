@@ -22,21 +22,6 @@
             }
             .no-print { display: none !important; }
         }
-        @media print {
-  body * {
-    visibility: hidden !important;
-  }
-  #receipt-print-area, #receipt-print-area * {
-    visibility: visible !important;
-  }
-  #receipt-print-area {
-    display: block !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 100% !important;
-  }
-}
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex flex-col">
@@ -519,63 +504,6 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = "Simpan & Cetak Struk";
-            }
-        });
-        // FITUR BARU: Cetak Ulang Berdasarkan Nama Customer (Pencarian Fleksibel)
-        document.getElementById('reprint-btn').addEventListener('click', async () => {
-            const searchName = document.getElementById('reprint-cust-name').value.trim();
-            if (!searchName) {
-                alert("Masukkan nama pelanggan yang ingin dicari!");
-                return;
-            }
-
-            try {
-                // Ambil semua transaksi diurutkan dari yang terbaru
-                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-
-                let foundData = null;
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    // Cek pencocokan nama secara case-insensitive (mengabaikan huruf besar/kecil)
-                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
-                        foundData = data;
-                    }
-                });
-
-                if (!foundData) {
-                    alert(`Tidak ditemukan transaksi atas nama "${searchName}"!`);
-                    return;
-                }
-
-                // Isi data ke template struk cetak
-                document.getElementById('rec-notrx').textContent = foundData.noTrx;
-                document.getElementById('rec-date').textContent = foundData.createdAt ? foundData.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-                document.getElementById('rec-cust').textContent = foundData.customerName;
-                document.getElementById('rec-phone').textContent = foundData.customerPhone;
-                document.getElementById('rec-cashier').textContent = foundData.cashier ? foundData.cashier.split('@')[0] : '-';
-                document.getElementById('rec-method').textContent = foundData.paymentMethod;
-                document.getElementById('rec-total').textContent = `Rp ${foundData.totalAmount.toLocaleString('id-ID')}`;
-                document.getElementById('rec-pay').textContent = `Rp ${foundData.paidAmount.toLocaleString('id-ID')}`;
-
-                if (foundData.paidAmount >= foundData.totalAmount) {
-                    document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
-                    document.getElementById('rec-rem').textContent = `Rp ${foundData.changeAmount.toLocaleString('id-ID')}`;
-                } else {
-                    document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
-                    document.getElementById('rec-rem').textContent = `Rp ${foundData.remainingAmount.toLocaleString('id-ID')}`;
-                }
-                document.getElementById('rec-status').textContent = foundData.paymentStatus;
-
-                document.getElementById('rec-items').innerHTML = foundData.items.map((i, idx) => {
-                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
-                }).join('');
-
-                window.print();
-            } catch (err) {
-                console.error("Gagal mencetak ulang nota:", err);
-                alert("Terjadi kesalahan saat mencari data transaksi.");
             }
         });
     </script>
