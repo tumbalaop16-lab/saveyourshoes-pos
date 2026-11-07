@@ -263,10 +263,19 @@
                     </style>
                 </head>
                 <body>
-                    <div class="text-center bold" style="font-size: 13px;">SAVE YOUR SHOES</div>
-                    <div class="text-center" style="font-size: 9px;">Jl. Bantaran Indah, Malang</div>
-                    <div class="text-center" style="font-size: 9px;">WA: 082326172488</div>
-                    <div class="dashed"></div>
+                    <div id="receipt-print" class="hidden print:block">
+        <div style="text-align: center; font-family: monospace;">
+            <!-- Logo Toko dari link CDN Anda -->
+            <img src="https://cdn.phototourl.com/member/2026-09-29-0dacf2b1-a1d6-42f4-b51d-6f971a6f5839.jpg" alt="Logo" style="width: 45px; height: auto; display: block; margin: 0 auto 3px auto; filter: grayscale(100%);">
+            <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
+            <span style="font-size: 7.5px;">Jl. Bantaran Indah No. 14, Tulusrejo</span><br>
+            <span style="font-size: 7.5px;">Kec. Lowokwaru, Kota Malang</span><br>
+            <span style="font-size: 7.5px;">IG: @saveyourshoes_official</span><br>
+            <span style="font-size: 7.5px;">TikTok: @saveyourshoes_official</span><br>
+            <span style="font-size: 7.5px;">WA Admin: 082326172488</span><br>
+            --------------------------------
+        </div>
+
                     <div>No. Nota : ${data.noTrx || 'SYS-NOTE'}</div>
                     <div>Waktu    : ${dateStr}</div>
                     <div>Kasir    : ${data.cashier || 'Admin'}</div>
