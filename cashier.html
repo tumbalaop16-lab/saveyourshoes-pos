@@ -42,18 +42,6 @@
             <button onclick="window.print()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-slate-900">Test Print Struk</button>
         </div>
 
-        <!-- FITUR BARU: Cetak Ulang Nota / Struk -->
-        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div>
-                <h3 class="text-sm font-bold text-slate-800">Cetak Ulang Struk / Nota Lama</h3>
-                <p class="text-[11px] text-slate-500">Masukkan No. Transaksi (Contoh: SYS-2026...) untuk cetak struk kembali.</p>
-            </div>
-            <div class="flex gap-2 w-full sm:w-auto">
-                <input type="text" id="reprint-trx-id" placeholder="No. Transaksi (SYS-...)" class="px-3 py-2 border rounded-lg text-xs w-full sm:w-48 focus:ring-2 focus:ring-amber-500">
-                <button type="button" id="reprint-btn" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-amber-700 whitespace-nowrap">Cetak Ulang</button>
-            </div>
-        </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Form Input & Keranjang -->
             <div class="lg:col-span-2 space-y-6">
@@ -178,6 +166,7 @@
     <!-- Template Struk Thermal 58mm (Dengan Logo & Info Toko) -->
     <div id="receipt-print" class="hidden print:block">
         <div style="text-align: center; font-family: monospace;">
+            <!-- Logo Toko dari link CDN Anda -->
             <img src="https://cdn.phototourl.com/member/2026-09-29-0dacf2b1-a1d6-42f4-b51d-6f971a6f5839.jpg" alt="Logo" style="width: 45px; height: auto; display: block; margin: 0 auto 3px auto; filter: grayscale(100%);">
             <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
             <span style="font-size: 7.5px;">Jl. Bantaran Indah No. 14, Tulusrejo</span><br>
@@ -217,7 +206,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
@@ -253,6 +242,7 @@
                 { name: "Repaint Upper", price: 150000 },
                 { name: "Ganti Sole", price: 250000 },
                 { name: "Recover Sepatu", price: 300000 }
+
             ],
             BAG: [
                 { name: "Cuci Tas", price: 50000 },
@@ -514,66 +504,6 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = "Simpan & Cetak Struk";
-            }
-        });
-
-        // FITUR BARU: Cetak Ulang Berdasarkan Nama Customer (Pencarian Fleksibel)
-        document.getElementById('reprint-btn').addEventListener('click', async () => {
-            const searchName = document.getElementById('reprint-cust-name').value.trim();
-            if (!searchName) {
-                alert("Masukkan nama pelanggan yang ingin dicari!");
-                return;
-            }
-
-            try {
-                // Ambil semua transaksi diurutkan dari yang terbaru
-                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-
-                let foundData = null;
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    // Cek pencocokan nama secara case-insensitive (mengabaikan huruf besar/kecil)
-                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
-                        foundData = data;
-                    }
-                });
-
-                if (!foundData) {
-                    alert(`Tidak ditemukan transaksi atas nama "${searchName}"!`);
-                    return;
-                }
-
-                const trxData = querySnapshot.docs[0].data();
-
-                // Isi data ke template struk cetak
-                document.getElementById('rec-notrx').textContent = trxData.noTrx;
-                document.getElementById('rec-date').textContent = trxData.createdAt ? trxData.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-                document.getElementById('rec-cust').textContent = trxData.customerName;
-                document.getElementById('rec-phone').textContent = trxData.customerPhone;
-                document.getElementById('rec-cashier').textContent = trxData.cashier ? trxData.cashier.split('@')[0] : '-';
-                document.getElementById('rec-method').textContent = trxData.paymentMethod;
-                document.getElementById('rec-total').textContent = `Rp ${trxData.totalAmount.toLocaleString('id-ID')}`;
-                document.getElementById('rec-pay').textContent = `Rp ${trxData.paidAmount.toLocaleString('id-ID')}`;
-
-                if (trxData.paidAmount >= trxData.totalAmount) {
-                    document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
-                    document.getElementById('rec-rem').textContent = `Rp ${trxData.changeAmount.toLocaleString('id-ID')}`;
-                } else {
-                    document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
-                    document.getElementById('rec-rem').textContent = `Rp ${trxData.remainingAmount.toLocaleString('id-ID')}`;
-                }
-                document.getElementById('rec-status').textContent = trxData.paymentStatus;
-
-                document.getElementById('rec-items').innerHTML = trxData.items.map((i, idx) => {
-                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
-                }).join('');
-
-                window.print();
-            } catch (err) {
-                console.error("Gagal mencetak ulang nota:", err);
-                alert("Terjadi kesalahan saat mencari data transaksi.");
             }
         });
     </script>
