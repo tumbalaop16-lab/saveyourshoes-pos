@@ -8,17 +8,18 @@
     <style>
         /* CSS khusus cetak Struk Thermal 58mm */
         @media print {
-            body * { visibility: hidden; }
-            #receipt-print, #receipt-print * { visibility: visible; }
+            body * { visibility: hidden !important; }
+            #receipt-print, #receipt-print * { visibility: visible !important; }
             #receipt-print {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 58mm;
-                font-family: monospace;
-                font-size: 11px;
-                padding: 4px;
-                color: black;
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 58mm !important;
+                font-family: monospace !important;
+                font-size: 11px !important;
+                padding: 4px !important;
+                color: black !important;
+                background: white !important;
             }
             .no-print { display: none !important; }
         }
@@ -34,23 +35,38 @@
 
     <!-- Konten Utama -->
     <main class="flex-1 p-4 md:p-6 max-w-6xl w-full mx-auto no-print">
-        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex justify-between items-center">
+        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
                 <h2 class="text-xl font-bold text-slate-800">Input Transaksi Kasir</h2>
                 <p class="text-xs text-emerald-600 font-medium" id="user-email"></p>
             </div>
-            <button onclick="window.print()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-slate-900">Test Print Struk</button>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button type="button" id="migrasi-btn" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-indigo-700 whitespace-nowrap">Tarik Data Lama ke Sheets</button>
+                <button onclick="window.print()" class="bg-slate-800 text-white px-3 py-2 rounded-lg text-xs hover:bg-slate-900 whitespace-nowrap">Test Print Struk</button>
+            </div>
         </div>
 
-        <!-- FITUR CETAK ULANG BERDASARKAN NAMA CUSTOMER -->
-        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+        <!-- FITUR 1: CETAK ULANG NOTA VIA NAMA -->
+        <div class="bg-white p-4 rounded-xl shadow-md mb-4 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div>
-                <h3 class="text-sm font-bold text-slate-800">Cetak Ulang Struk / Nota via Nama Customer</h3>
-                <p class="text-[11px] text-slate-500">Masukkan Nama Pelanggan untuk mencari dan mencetak struk transaksi terakhirnya.</p>
+                <h3 class="text-sm font-bold text-slate-800">Cetak Ulang Struk / Nota</h3>
+                <p class="text-[11px] text-slate-500">Cari nama pelanggan untuk mencetak ulang struk transaksinya.</p>
             </div>
             <div class="flex gap-2 w-full sm:w-auto">
-                <input type="text" id="reprint-cust-name" placeholder="Nama Pelanggan (Cth: Budi)" class="px-3 py-2 border rounded-lg text-xs w-full sm:w-48 focus:ring-2 focus:ring-amber-500">
+                <input type="text" id="reprint-cust-name" placeholder="Nama Pelanggan" class="px-3 py-2 border rounded-lg text-xs w-full sm:w-48 focus:ring-2 focus:ring-amber-500">
                 <button type="button" id="reprint-btn" class="bg-amber-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-amber-700 whitespace-nowrap">Cari & Cetak</button>
+            </div>
+        </div>
+
+        <!-- FITUR 2: PELUNASAN & PENGAMBILAN -->
+        <div class="bg-white p-4 rounded-xl shadow-md mb-6 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div>
+                <h3 class="text-sm font-bold text-slate-800">Pelunasan & Pengambilan Cucian</h3>
+                <p class="text-[11px] text-slate-500">Cari nama pelanggan untuk melunasi sisa tagihan/DP dan cetak nota lunas.</p>
+            </div>
+            <div class="flex gap-2 w-full sm:w-auto">
+                <input type="text" id="pelunasan-cust-name" placeholder="Nama Pelanggan" class="px-3 py-2 border rounded-lg text-xs w-full sm:w-48 focus:ring-2 focus:ring-emerald-500">
+                <button type="button" id="cari-pelunasan-btn" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-semibold hover:bg-emerald-700 whitespace-nowrap">Cek & Lunasi</button>
             </div>
         </div>
 
@@ -85,16 +101,12 @@
 
                     <!-- Dynamic Form Item -->
                     <form id="add-item-form" class="space-y-3">
-                        <div id="identitas-container" class="grid grid-cols-3 gap-2">
-                            <!-- Field identitas berubah sesuai kategori -->
-                        </div>
+                        <div id="identitas-container" class="grid grid-cols-3 gap-2"></div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Layanan / Treatment</label>
-                                <select id="item-service" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500">
-                                    <!-- Terisi via Javascript -->
-                                </select>
+                                <select id="item-service" required class="w-full px-3 py-2 border rounded-lg text-sm focus:ring-2 focus:ring-emerald-500"></select>
                             </div>
                             <div>
                                 <label class="block text-xs font-medium text-slate-600 mb-1">Harga Khusus / Promo (Rp)</label>
@@ -154,7 +166,6 @@
                         <input type="number" id="pay-amount" placeholder="0" class="w-full px-3 py-2 border rounded-lg text-sm">
                     </div>
 
-                    <!-- Tampilan Sisa (jika DP) atau Kembalian (jika Lebih) -->
                     <div id="payment-status-box" class="p-3 rounded-lg bg-slate-50 border space-y-1">
                         <div class="flex justify-between font-medium text-xs text-slate-600">
                             <span id="label-change-or-rem">Kurang / Sisa:</span>
@@ -175,7 +186,7 @@
         </div>
     </main>
 
-    <!-- Template Struk Thermal 58mm (Dengan Logo & Info Toko) -->
+    <!-- Template Struk Thermal 58mm -->
     <div id="receipt-print" class="hidden print:block">
         <div style="text-align: center; font-family: monospace;">
             <img src="https://cdn.phototourl.com/member/2026-09-29-0dacf2b1-a1d6-42f4-b51d-6f971a6f5839.jpg" alt="Logo" style="width: 45px; height: auto; display: block; margin: 0 auto 3px auto; filter: grayscale(100%);">
@@ -213,11 +224,11 @@
         </div>
     </div>
 
-    <!-- Script Logika App & Firestore -->
+    <!-- Script Logika App, Firebase & Google Sheets Webhook -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, updateDoc, serverTimestamp, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
@@ -231,6 +242,9 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
+
+        // URL Google Apps Script Webhook Anda
+        const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbx3Q4iompG53Kb2mmsAnmgmzZUDiw-KNbNFrtJ7ofOuZ1oUhufH3fFlD2J4lpDniUc2/exec";
 
         let activeUserEmail = "";
         let currentCategory = "SHOES";
@@ -275,7 +289,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const userDoc = await getDoc(doc(db, "users", user.uid));
-                if (userDoc.exists() && (userDoc.data().role === 'cashier' || userDoc.data().role === 'admin')) {
+                if (userDoc.exists() && ['cashier', 'admin', 'owner'].includes(userDoc.data().role?.toLowerCase())) {
                     activeUserEmail = user.email;
                     document.getElementById('user-email').textContent = "Kasir Aktif: " + user.email;
                 } else {
@@ -423,7 +437,7 @@
             }
         }
 
-        // Submit Order & Print
+        // Submit Order & Print (Otomatis Sync ke Sheets)
         document.getElementById('submit-order-btn').addEventListener('click', async () => {
             const custName = document.getElementById('cust-name').value.trim();
             const custPhone = document.getElementById('cust-phone').value.trim();
@@ -455,6 +469,7 @@
             btn.textContent = "Menyimpan...";
 
             try {
+                // 1. Simpan ke Firebase Firestore
                 await addDoc(collection(db, "transactions"), {
                     noTrx: noTrx,
                     customerName: custName,
@@ -471,31 +486,38 @@
                     createdAt: serverTimestamp()
                 });
 
-                document.getElementById('rec-notrx').textContent = noTrx;
-                document.getElementById('rec-date').textContent = new Date().toLocaleString('id-ID');
-                document.getElementById('rec-cust').textContent = custName;
-                document.getElementById('rec-phone').textContent = custPhone;
-                document.getElementById('rec-cashier').textContent = activeUserEmail.split('@')[0];
-                document.getElementById('rec-method').textContent = payMethod;
-                document.getElementById('rec-total').textContent = `Rp ${grandTotal.toLocaleString('id-ID')}`;
-                document.getElementById('rec-pay').textContent = `Rp ${payAmount.toLocaleString('id-ID')}`;
-                
-                if (diff >= 0) {
-                    document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
-                    document.getElementById('rec-rem').textContent = `Rp ${changeAmount.toLocaleString('id-ID')}`;
-                } else {
-                    document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
-                    document.getElementById('rec-rem').textContent = `Rp ${remainingAmount.toLocaleString('id-ID')}`;
-                }
-                document.getElementById('rec-status').textContent = paymentStatus;
+                // 2. Kirim otomatis ke Google Sheets via Fetch Webhook
+                fetch(SHEETS_WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        noTrx: noTrx,
+                        customerName: custName,
+                        customerPhone: custPhone,
+                        totalAmount: grandTotal,
+                        paymentStatus: paymentStatus,
+                        cashier: activeUserEmail
+                    })
+                }).catch(err => console.log("Gagal sync ke Sheets:", err));
 
-                document.getElementById('rec-items').innerHTML = cart.map((i, idx) => {
-                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
-                }).join('');
+                // 3. Cetak Struk
+                cetakStrukNota({
+                    noTrx,
+                    customerName: custName,
+                    customerPhone: custPhone,
+                    cashier: activeUserEmail,
+                    paymentMethod: payMethod,
+                    totalAmount: grandTotal,
+                    paidAmount: payAmount,
+                    changeAmount: changeAmount,
+                    remainingAmount: remainingAmount,
+                    paymentStatus: paymentStatus,
+                    items: cart,
+                    createdAt: { toDate: () => new Date() }
+                });
 
-                alert("Transaksi Berhasil Disimpan! Menyiapkan cetak struk...");
-                window.print();
+                alert("Transaksi Berhasil Disimpan & Disinkronkan!");
 
                 cart = [];
                 document.getElementById('cust-name').value = '';
@@ -510,6 +532,49 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = "Simpan & Cetak Struk";
+            }
+        });
+
+        // Tombol Migrasi Data Lama dari Firebase ke Google Sheets
+        document.getElementById('migrasi-btn').addEventListener('click', async () => {
+            const konfirmasi = confirm("Tarik semua riwayat transaksi lama dari Firebase ke Google Sheets?");
+            if (!konfirmasi) return;
+
+            const btnMigrasi = document.getElementById('migrasi-btn');
+            btnMigrasi.disabled = true;
+            btnMigrasi.textContent = "Memproses...";
+
+            try {
+                const querySnapshot = await getDocs(collection(db, "transactions"));
+                let allTransactions = [];
+
+                querySnapshot.forEach((docSnap) => {
+                    const d = docSnap.data();
+                    allTransactions.push({
+                        noTrx: d.noTrx || "-",
+                        customerName: d.customerName || "-",
+                        customerPhone: d.customerPhone || "-",
+                        totalAmount: d.totalAmount || 0,
+                        paymentStatus: d.paymentStatus || "LUNAS",
+                        cashier: d.cashier || "-",
+                        createdAt: d.createdAt ? d.createdAt.toDate().toISOString() : new Date().toISOString()
+                    });
+                });
+
+                await fetch(SHEETS_WEBHOOK_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(allTransactions)
+                });
+
+                alert(`Berhasil mengirim ${allTransactions.length} data riwayat ke Google Sheets!`);
+            } catch (err) {
+                console.error("Gagal migrasi:", err);
+                alert("Terjadi kesalahan saat migrasi data.");
+            } finally {
+                btnMigrasi.disabled = false;
+                btnMigrasi.textContent = "Tarik Data Lama ke Sheets";
             }
         });
 
@@ -538,35 +603,127 @@
                     return;
                 }
 
-                document.getElementById('rec-notrx').textContent = foundData.noTrx;
-                document.getElementById('rec-date').textContent = foundData.createdAt ? foundData.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-                document.getElementById('rec-cust').textContent = foundData.customerName;
-                document.getElementById('rec-phone').textContent = foundData.customerPhone;
-                document.getElementById('rec-cashier').textContent = foundData.cashier ? foundData.cashier.split('@')[0] : '-';
-                document.getElementById('rec-method').textContent = foundData.paymentMethod;
-                document.getElementById('rec-total').textContent = `Rp ${foundData.totalAmount.toLocaleString('id-ID')}`;
-                document.getElementById('rec-pay').textContent = `Rp ${foundData.paidAmount.toLocaleString('id-ID')}`;
-
-                if (foundData.paidAmount >= foundData.totalAmount) {
-                    document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
-                    document.getElementById('rec-rem').textContent = `Rp ${foundData.changeAmount.toLocaleString('id-ID')}`;
-                } else {
-                    document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
-                    document.getElementById('rec-rem').textContent = `Rp ${foundData.remainingAmount.toLocaleString('id-ID')}`;
-                }
-                document.getElementById('rec-status').textContent = foundData.paymentStatus;
-
-                document.getElementById('rec-items').innerHTML = foundData.items.map((i, idx) => {
-                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${i.price.toLocaleString('id-ID')}</div>`;
-                }).join('');
-
-                window.print();
+                cetakStrukNota(foundData);
             } catch (err) {
-                console.error("Gagal mencetak ulang nota:", err);
-                alert("Terjadi kesalahan saat mencari data transaksi.");
+                console.error("Gagal cetak ulang:", err);
+                alert("Terjadi kesalahan saat mencari data.");
             }
         });
+
+        // Tombol Pelunasan & Pengambilan Cucian
+        document.getElementById('cari-pelunasan-btn').addEventListener('click', async () => {
+            const searchName = document.getElementById('pelunasan-cust-name').value.trim();
+            if (!searchName) {
+                alert("Masukkan nama pelanggan untuk pelunasan!");
+                return;
+            }
+
+            try {
+                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+
+                let foundDocId = null;
+                let foundData = null;
+
+                querySnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
+                        foundDocId = docSnap.id;
+                        foundData = data;
+                    }
+                });
+
+                if (!foundData) {
+                    alert(`Tidak ditemukan data atas nama "${searchName}"!`);
+                    return;
+                }
+
+                if (foundData.paymentStatus === "LUNAS") {
+                    alert(`Transaksi atas nama ${foundData.customerName} sudah berstatus LUNAS.`);
+                    cetakStrukNota(foundData);
+                    return;
+                }
+
+                const sisaTagihan = foundData.remainingAmount || 0;
+                const konfirmasi = confirm(`Pelanggan: ${foundData.customerName}\nSisa Belum Dibayar: Rp ${sisaTagihan.toLocaleString('id-ID')}\n\nTekan OK untuk melunasi.`);
+                
+                if (konfirmasi) {
+                    const bayarInput = prompt(`Masukkan jumlah uang pelunasan:`, sisaTagihan);
+                    if (bayarInput === null) return;
+
+                    const bayarBaru = Number(bayarInput) || 0;
+                    const totalBayar = foundData.paidAmount + bayarBaru;
+                    const sisaBaru = foundData.totalAmount - totalBayar;
+                    const statusBaru = sisaBaru <= 0 ? "LUNAS" : "BELUM LUNAS (DP)";
+                    const kembalianBaru = sisaBaru < 0 ? Math.abs(sisaBaru) : 0;
+
+                    const trxRef = doc(db, "transactions", foundDocId);
+                    await updateDoc(trxRef, {
+                        paidAmount: totalBayar,
+                        remainingAmount: sisaBaru < 0 ? 0 : sisaBaru,
+                        changeAmount: kembalianBaru,
+                        paymentStatus: statusBaru
+                    });
+
+                    foundData.paidAmount = totalBayar;
+                    foundData.remainingAmount = sisaBaru < 0 ? 0 : sisaBaru;
+                    foundData.changeAmount = kembalianBaru;
+                    foundData.paymentStatus = statusBaru;
+
+                    // Sync status pelunasan terbaru ke Google Sheets juga
+                    fetch(SHEETS_WEBHOOK_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            noTrx: foundData.noTrx,
+                            customerName: foundData.customerName,
+                            customerPhone: foundData.customerPhone,
+                            totalAmount: foundData.totalAmount,
+                            paymentStatus: statusBaru,
+                            cashier: foundData.cashier || activeUserEmail
+                        })
+                    }).catch(err => console.log("Gagal sync pelunasan ke Sheets:", err));
+
+                    alert("Pelunasan Berhasil Disimpan & Disinkronkan!");
+                    cetakStrukNota(foundData);
+                }
+
+            } catch (err) {
+                console.error("Gagal proses pelunasan:", err);
+                alert("Terjadi kesalahan saat memproses pelunasan.");
+            }
+        });
+
+        // Fungsi Universal Cetak Struk
+        function cetakStrukNota(trxData) {
+            document.getElementById('rec-notrx').textContent = trxData.noTrx || "SYS-POS";
+            document.getElementById('rec-date').textContent = trxData.createdAt && trxData.createdAt.toDate ? trxData.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+            document.getElementById('rec-cust').textContent = trxData.customerName || "-";
+            document.getElementById('rec-phone').textContent = trxData.customerPhone || "-";
+            document.getElementById('rec-cashier').textContent = trxData.cashier ? trxData.cashier.split('@')[0] : '-';
+            document.getElementById('rec-method').textContent = trxData.paymentMethod || "Cash";
+            document.getElementById('rec-total').textContent = `Rp ${Number(trxData.totalAmount || 0).toLocaleString('id-ID')}`;
+            document.getElementById('rec-pay').textContent = `Rp ${Number(trxData.paidAmount || 0).toLocaleString('id-ID')}`;
+
+            if ((trxData.paidAmount || 0) >= (trxData.totalAmount || 0)) {
+                document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
+                document.getElementById('rec-rem').textContent = `Rp ${Number(trxData.changeAmount || 0).toLocaleString('id-ID')}`;
+            } else {
+                document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
+                document.getElementById('rec-rem').textContent = `Rp ${Number(trxData.remainingAmount || 0).toLocaleString('id-ID')}`;
+            }
+            document.getElementById('rec-status').textContent = trxData.paymentStatus || "LUNAS";
+
+            if (trxData.items && Array.isArray(trxData.items)) {
+                document.getElementById('rec-items').innerHTML = trxData.items.map((i, idx) => {
+                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
+                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${Number(i.price).toLocaleString('id-ID')}</div>`;
+                }).join('');
+            }
+
+            window.print();
+        }
     </script>
 </body>
 </html>
