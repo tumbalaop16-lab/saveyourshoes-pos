@@ -541,7 +541,7 @@ try {
             }
         });
 
-// Tombol Migrasi Data Lama dari Firebase ke Google Sheets (Versi Aman & Anti-Error)
+// Tombol Migrasi Data Lama (Versi Paling Aman / Tanpa OrderBypass)
         document.getElementById('migrasi-btn').addEventListener('click', async () => {
             const konfirmasi = confirm("Tarik semua riwayat transaksi lama dari Firebase ke Google Sheets?");
             if (!konfirmasi) return;
@@ -551,14 +551,13 @@ try {
             btnMigrasi.textContent = "Memproses...";
 
             try {
-                const q = query(collection(db, "transactions"), orderBy("createdAt", "asc"));
-                const querySnapshot = await getDocs(q);
+                // Ambil semua data tanpa orderBy agar tidak error jika ada field tanggal yang kosong
+                const querySnapshot = await getDocs(collection(db, "transactions"));
                 let allTransactions = [];
 
                 querySnapshot.forEach((docSnap) => {
                     const d = docSnap.data();
                     
-                    // Ambil tanggal dengan aman (menghindari error jika formatnya berbeda)
                     let tglStr = new Date().toISOString();
                     try {
                         if (d.createdAt && typeof d.createdAt.toDate === 'function') {
@@ -586,7 +585,7 @@ try {
                     return;
                 }
 
-                // Kirim per batch isi 5 transaksi agar aman dari limit URL GET
+                // Kirim per batch isi 5 transaksi ke Google Sheets
                 const batchSize = 5;
                 for (let i = 0; i < allTransactions.length; i += batchSize) {
                     const batch = allTransactions.slice(i, i + batchSize);
@@ -597,23 +596,6 @@ try {
                     } catch (batchErr) {
                         console.error("Gagal kirim batch:", batchErr);
                     }
-                }
-
-                alert(`Berhasil mengirim ${allTransactions.length} data riwayat ke Google Sheets!`);
-            } catch (err) {
-                console.error("Gagal migrasi:", err);
-                alert("Terjadi kesalahan saat migrasi data: " + err.message);
-            } finally {
-                btnMigrasi.disabled = false;
-                btnMigrasi.textContent = "Tarik Data Lama ke Sheets";
-            }
-        });
-                // Kirim per batch isi 5 transaksi agar URL GET tidak terkena limit
-                const batchSize = 5;
-                for (let i = 0; i < allTransactions.length; i += batchSize) {
-                    const batch = allTransactions.slice(i, i + batchSize);
-                    btnMigrasi.textContent = `Mengirim ${Math.min(i + batchSize, allTransactions.length)}/${allTransactions.length}...`;
-                    await kirimKeGoogleSheets(batch);
                 }
 
                 alert(`Berhasil mengirim ${allTransactions.length} data riwayat ke Google Sheets!`);
