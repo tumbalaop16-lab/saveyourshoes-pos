@@ -251,12 +251,18 @@
         let cart = [];
 
         // Fungsi Helper Kirim Data ke Google Sheets via GET Parameter (Anti CORS Tablet)
-        async function kirimKeGoogleSheets(payload) {
-            const encodedData = encodeURIComponent(JSON.stringify(payload));
-            const targetUrl = `${SHEETS_WEBHOOK_URL}?data=${encodedData}`;
-            const response = await fetch(targetUrl);
-            return await response.json();
-        }
+        // GANTI DENGAN INI:
+async function kirimKeGoogleSheets(payload) {
+    await fetch(SHEETS_WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+    return { status: "success" };
+}
         // Database Menu
         const menuData = {
             SHOES: [
