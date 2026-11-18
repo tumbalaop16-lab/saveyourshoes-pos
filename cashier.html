@@ -250,6 +250,13 @@
         let currentCategory = "SHOES";
         let cart = [];
 
+        // Fungsi Helper Kirim Data ke Google Sheets via GET Parameter (Anti CORS Tablet)
+        async function kirimKeGoogleSheets(payload) {
+            const encodedData = encodeURIComponent(JSON.stringify(payload));
+            const targetUrl = `${SHEETS_WEBHOOK_URL}?data=${encodedData}`;
+            const response = await fetch(targetUrl);
+            return await response.json();
+        }
         // Database Menu
         const menuData = {
             SHOES: [
@@ -535,7 +542,7 @@
             }
         });
 
-        // Tombol Migrasi Data Lama dari Firebase ke Google Sheets
+// Tombol Migrasi Data Lama dari Firebase ke Google Sheets (Bertahap per 5 data)
         document.getElementById('migrasi-btn').addEventListener('click', async () => {
             const konfirmasi = confirm("Tarik semua riwayat transaksi lama dari Firebase ke Google Sheets?");
             if (!konfirmasi) return;
@@ -545,7 +552,8 @@
             btnMigrasi.textContent = "Memproses...";
 
             try {
-                const querySnapshot = await getDocs(collection(db, "transactions"));
+                const q = query(collection(db, "transactions"), orderBy("createdAt", "asc"));
+                const querySnapshot = await getDocs(q);
                 let allTransactions = [];
 
                 querySnapshot.forEach((docSnap) => {
@@ -561,23 +569,28 @@
                     });
                 });
 
-                await fetch(SHEETS_WEBHOOK_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(allTransactions)
-                });
+                if (allTransactions.length === 0) {
+                    alert("Tidak ada data riwayat di Firebase.");
+                    return;
+                }
+
+                // Kirim per batch isi 5 transaksi agar URL GET tidak terkena limit
+                const batchSize = 5;
+                for (let i = 0; i < allTransactions.length; i += batchSize) {
+                    const batch = allTransactions.slice(i, i + batchSize);
+                    btnMigrasi.textContent = `Mengirim ${Math.min(i + batchSize, allTransactions.length)}/${allTransactions.length}...`;
+                    await kirimKeGoogleSheets(batch);
+                }
 
                 alert(`Berhasil mengirim ${allTransactions.length} data riwayat ke Google Sheets!`);
             } catch (err) {
                 console.error("Gagal migrasi:", err);
-                alert("Terjadi kesalahan saat migrasi data.");
+                alert("Terjadi kesalahan saat migrasi data: " + err.message);
             } finally {
                 btnMigrasi.disabled = false;
                 btnMigrasi.textContent = "Tarik Data Lama ke Sheets";
             }
         });
-
         // Tombol Cetak Ulang Berdasarkan Nama Customer
         document.getElementById('reprint-btn').addEventListener('click', async () => {
             const searchName = document.getElementById('reprint-cust-name').value.trim();
