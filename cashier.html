@@ -475,7 +475,7 @@
             btn.disabled = true;
             btn.textContent = "Menyimpan...";
 
-            try {
+try {
                 // 1. Simpan ke Firebase Firestore
                 await addDoc(collection(db, "transactions"), {
                     noTrx: noTrx,
@@ -493,20 +493,19 @@
                     createdAt: serverTimestamp()
                 });
 
-                // 2. Kirim otomatis ke Google Sheets via Fetch Webhook
-                fetch(SHEETS_WEBHOOK_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
+                // 2. Kirim otomatis ke Google Sheets via GET Parameter (TEMPEL DI SINI)
+                try {
+                    await kirimKeGoogleSheets({
                         noTrx: noTrx,
                         customerName: custName,
                         customerPhone: custPhone,
                         totalAmount: grandTotal,
                         paymentStatus: paymentStatus,
                         cashier: activeUserEmail
-                    })
-                }).catch(err => console.log("Gagal sync ke Sheets:", err));
+                    });
+                } catch (syncErr) {
+                    console.error("Gagal sync ke Sheets:", syncErr);
+                }
 
                 // 3. Cetak Struk
                 cetakStrukNota({
