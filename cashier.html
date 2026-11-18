@@ -244,7 +244,10 @@
         const db = getFirestore(app);
 
         // URL Google Apps Script Webhook Anda
-        const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzX2MPODkFiCrL_4rBHm2hGNzl8bEsbVoOKZvLyi-PTNuaiLkIthbRGIrAte--DPUu5/exec";
+        const SHEETS_WEBHOOK_URL = "{
+  "status": "online",
+  "message": "SaveYourShoes POS Webhook is Active!"
+}";
 
         let activeUserEmail = "";
         let currentCategory = "SHOES";
