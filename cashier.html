@@ -564,34 +564,39 @@ try {
                 let allTransactions = [];
 
                 querySnapshot.forEach((docSnap) => {
-                    const d = docSnap.data();
-                    
-                    let tglStr = new Date().toISOString();
-                    try {
-                        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
-                            tglStr = d.createdAt.toDate().toISOString();
-                        } else if (d.createdAt) {
-                            tglStr = new Date(d.createdAt).toISOString();
-                        }
-                    } catch (e) {
-                        tglStr = new Date().toISOString();
-                    }
+    const d = docSnap.data();
 
-                    allTransactions.push({
-                        noTrx: String(d.noTrx || "-"),
-                        customerName: String(d.customerName || "-"),
-                        customerPhone: String(d.customerPhone || "-"),
-                        totalAmount: Number(d.totalAmount || 0),
-                        paymentStatus: String(d.paymentStatus || "LUNAS"),
-                        cashier: String(d.cashier || "-"),
-                        createdAt: tglStr
-                    });
-                });
+    let tglStr = new Date().toISOString();
+    try {
+        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
+            tglStr = d.createdAt.toDate().toISOString();
+        } else if (d.createdAt) {
+            tglStr = new Date(d.createdAt).toISOString();
+        }
+    } catch (e) {
+        tglStr = new Date().toISOString();
+    }
 
-                if (allTransactions.length === 0) {
-                    alert("Tidak ada data riwayat di Firebase.");
-                    return;
-                }
+    // TEMPEL DI SINI (mengambil detail sepatu dari array items jika ada)
+    let brandItem = d.items && d.items.length > 0 ? d.items[0].brand || "-" : "-";
+    let sizeItem = d.items && d.items.length > 0 ? d.items[0].size || "-" : "-";
+    let colorItem = d.items && d.items.length > 0 ? d.items[0].color || "-" : "-";
+    let menuItem = d.items && d.items.length > 0 ? d.items[0].name || "-" : "-";
+
+    allTransactions.push({
+        noTrx: String(d.noTrx || "-"),
+        customerName: String(d.customerName || "-"),
+        customerPhone: String(d.customerPhone || "-"),
+        shoeBrand: String(brandItem),
+        shoeSize: String(sizeItem),
+        shoeColor: String(colorItem),
+        serviceMenu: String(menuItem),
+        totalAmount: Number(d.totalAmount || 0),
+        paymentStatus: String(d.paymentStatus || "LUNAS"),
+        cashier: String(d.cashier || "-"),
+        createdAt: tglStr
+    });
+});
 
                 // Kirim per batch isi 5 transaksi ke Google Sheets
                 const batchSize = 5;
