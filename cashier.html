@@ -253,16 +253,18 @@
         // Fungsi Helper Kirim Data ke Google Sheets via GET Parameter (Anti CORS Tablet)
         // GANTI DENGAN INI:
 async function kirimKeGoogleSheets(payload) {
-    await fetch(SHEETS_WEBHOOK_URL, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-    });
-    return { status: "success" };
-}
+    await kirimKeGoogleSheets({
+    noTrx: noTrx,
+    customerName: custName,
+    customerPhone: custPhone,
+    shoeBrand: document.getElementById('input-shoe-brand').value || "-", // Sesuaikan id input di HTML Anda
+    shoeSize: document.getElementById('input-shoe-size').value || "-",
+    shoeColor: document.getElementById('input-shoe-color').value || "-",
+    serviceMenu: document.getElementById('input-service-menu').value || "-",
+    totalAmount: grandTotal,
+    paymentStatus: paymentStatus,
+    cashier: activeUserEmail
+});
         // Database Menu
         const menuData = {
             SHOES: [
