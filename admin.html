@@ -100,6 +100,21 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // URL Google Apps Script Webhook (sama dengan cashier.html)
+        const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbySWBmauL6-GkEYFn545lLBPd0Zpj12BJHNCZ_0PSbrwDZvVnk7yop_R1vynMsJatm0/exec";
+
+        async function kirimKeGoogleSheets(payload) {
+            await fetch(SHEETS_WEBHOOK_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+            return { status: "success" };
+        }
+
         let allTransactions = []; // Menyimpan data master untuk pencarian & filter
 
         onAuthStateChanged(auth, (user) => {
@@ -211,18 +226,40 @@
             renderTable(filtered);
         };
 
-        // Fungsi Update Status
+        // Fungsi Update Status (Firestore + Sinkronisasi ke Google Sheets)
         window.updateStatus = async function(docId, newStatus) {
             const confirmMsg = newStatus === 'LUNAS' ? "Ubah status transaksi ini menjadi LUNAS?" : "Tandai cucian ini sudah DIAMBIL oleh pelanggan?";
             if (!confirm(confirmMsg)) return;
 
             try {
+                const trxObj = allTransactions.find(t => t.id === docId) || {};
                 const docRef = doc(db, "transactions", docId);
+
+                let sheetPaymentStatus = "";
+                let sheetPickupStatus = "";
+
                 if (newStatus === 'LUNAS') {
                     await updateDoc(docRef, { paymentStatus: "LUNAS", remainingAmount: 0 });
+                    sheetPaymentStatus = "LUNAS";
                 } else if (newStatus === 'DIAMBIL') {
-                    await updateDoc(docRef, { paymentStatus: "SELESAI & DIAMBIL" });
+                    await updateDoc(docRef, { paymentStatus: "SELESAI & DIAMBIL", pickupStatus: "SUDAH DIAMBIL" });
+                    sheetPaymentStatus = "SELESAI & DIAMBIL";
+                    sheetPickupStatus = "SUDAH DIAMBIL";
                 }
+
+                if (trxObj.noTrx) {
+                    try {
+                        await kirimKeGoogleSheets({
+                            action: "updateStatus",
+                            noTrx: trxObj.noTrx,
+                            paymentStatus: sheetPaymentStatus,
+                            pickupStatus: sheetPickupStatus
+                        });
+                    } catch (syncErr) {
+                        console.error("Gagal sync perubahan status ke Sheets:", syncErr);
+                    }
+                }
+
                 alert("Status berhasil diperbarui!");
                 loadTransactions();
             } catch (err) {
@@ -264,35 +301,35 @@
                 </head>
                 <body>
                     <div id="receipt-print" class="hidden print:block">
-        <div style="text-align: center; font-family: monospace;">
-            <!-- Logo Toko dari link CDN Anda -->
-            <img src="https://cdn.phototourl.com/member/2026-09-29-0dacf2b1-a1d6-42f4-b51d-6f971a6f5839.jpg" alt="Logo" style="width: 45px; height: auto; display: block; margin: 0 auto 3px auto; filter: grayscale(100%);">
-            <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
-            <span style="font-size: 7.5px;">Jl. Bantaran Indah No. 14, Tulusrejo</span><br>
-            <span style="font-size: 7.5px;">Kec. Lowokwaru, Kota Malang</span><br>
-            <span style="font-size: 7.5px;">IG: @saveyourshoes_official</span><br>
-            <span style="font-size: 7.5px;">TikTok: @saveyourshoes_official</span><br>
-            <span style="font-size: 7.5px;">WA Admin: 082326172488</span><br>
-            --------------------------------
-        </div>
+                        <div style="text-align: center; font-family: monospace;">
+                            <img src="https://cdn.phototourl.com/member/2026-09-29-0dacf2b1-a1d6-42f4-b51d-6f971a6f5839.jpg" alt="Logo" style="width: 45px; height: auto; display: block; margin: 0 auto 3px auto; filter: grayscale(100%);">
+                            <b style="font-size: 13px;">SAVE YOUR SHOES</b><br>
+                            <span style="font-size: 7.5px;">Jl. Bantaran Indah No. 14, Tulusrejo</span><br>
+                            <span style="font-size: 7.5px;">Kec. Lowokwaru, Kota Malang</span><br>
+                            <span style="font-size: 7.5px;">IG: @saveyourshoes_official</span><br>
+                            <span style="font-size: 7.5px;">TikTok: @saveyourshoes_official</span><br>
+                            <span style="font-size: 7.5px;">WA Admin: 082326172488</span><br>
+                            --------------------------------
+                        </div>
 
-                    <div>No. Nota : ${data.noTrx || 'SYS-NOTE'}</div>
-                    <div>Waktu    : ${dateStr}</div>
-                    <div>Kasir    : ${data.cashier || 'Admin'}</div>
-                    <div>Pelanggan: ${data.customerName} (${data.customerPhone})</div>
-                    <div class="dashed"></div>
-                    <div class="bold">RINCIAN PESANAN:</div>
-                    ${itemsHtml}
-                    <div class="dashed"></div>
-                    <div class="flex"><span>Total Item:</span><span>${(data.items || []).length}</span></div>
-                    <div class="flex bold" style="font-size: 12px;"><span>TOTAL:</span><span>Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</span></div>
-                    <div class="flex"><span>Dibayar (${data.paymentMethod}):</span><span>Rp ${(data.paidAmount || 0).toLocaleString('id-ID')}</span></div>
-                    <div class="flex"><span>Sisa Pembayaran:</span><span>Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')}</span></div>
-                    <div class="flex bold"><span>Status:</span><span>${data.paymentStatus}</span></div>
-                    <div class="dashed"></div>
-                    <div class="text-center" style="font-size: 9px;">Terima kasih telah mempercayakan</div>
-                    <div class="text-center" style="font-size: 9px;">perawatan sepatu & tas Anda di SYS!</div>
-                    <div class="text-center" style="font-size: 9px; margin-top: 5px;">IG: @saveyourshoes_official</div>
+                        <div>No. Nota : ${data.noTrx || 'SYS-NOTE'}</div>
+                        <div>Waktu    : ${dateStr}</div>
+                        <div>Kasir    : ${data.cashier || 'Admin'}</div>
+                        <div>Pelanggan: ${data.customerName} (${data.customerPhone})</div>
+                        <div class="dashed"></div>
+                        <div class="bold">RINCIAN PESANAN:</div>
+                        ${itemsHtml}
+                        <div class="dashed"></div>
+                        <div class="flex"><span>Total Item:</span><span>${(data.items || []).length}</span></div>
+                        <div class="flex bold" style="font-size: 12px;"><span>TOTAL:</span><span>Rp ${(data.totalAmount || 0).toLocaleString('id-ID')}</span></div>
+                        <div class="flex"><span>Dibayar (${data.paymentMethod}):</span><span>Rp ${(data.paidAmount || 0).toLocaleString('id-ID')}</span></div>
+                        <div class="flex"><span>Sisa Pembayaran:</span><span>Rp ${(data.remainingAmount || 0).toLocaleString('id-ID')}</span></div>
+                        <div class="flex bold"><span>Status:</span><span>${data.paymentStatus}</span></div>
+                        <div class="dashed"></div>
+                        <div class="text-center" style="font-size: 9px;">Terima kasih telah mempercayakan</div>
+                        <div class="text-center" style="font-size: 9px;">perawatan sepatu & tas Anda di SYS!</div>
+                        <div class="text-center" style="font-size: 9px; margin-top: 5px;">IG: @saveyourshoes_official</div>
+                    </div>
                 </body>
                 </html>
             `);
