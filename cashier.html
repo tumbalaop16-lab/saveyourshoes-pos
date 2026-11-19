@@ -568,40 +568,39 @@
                 let allTransactions = [];
 
                 querySnapshot.forEach((docSnap) => {
-                    const d = docSnap.data();
+    const d = docSnap.data();
 
-                    let tglStr = new Date().toISOString();
-                    try {
-                        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
-                            tglStr = d.createdAt.toDate().toISOString();
-                        } else if (d.createdAt) {
-                            tglStr = new Date(d.createdAt).toISOString();
-                        }
-                    } catch (e) {
-                        tglStr = new Date().toISOString();
-                    }
+    let tglStr = new Date().toISOString();
+    try {
+        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
+            tglStr = d.createdAt.toDate().toISOString();
+        } else if (d.createdAt) {
+            const parsed = new Date(d.createdAt);
+            tglStr = !Number.isNaN(parsed.getTime()) ? parsed.toISOString() : new Date().toISOString();
+        }
+    } catch (e) {
+        tglStr = new Date().toISOString();
+    }
 
-                    const firstItem = Array.isArray(d.items) && d.items.length > 0 ? d.items[0] : {};
-                    const brandItem = firstItem.brand || "-";
-                    const sizeItem = firstItem.size || "-";
-                    const colorItem = firstItem.color || "-";
-                    const menuItem = firstItem.service || firstItem.name || "-";
+    const itemsList = Array.isArray(d.items) && d.items.length > 0 ? d.items : [{}];
 
-                    allTransactions.push({
-                        noTrx: String(d.noTrx || docSnap.id || "-"),
-                        customerName: String(d.customerName || "-"),
-                        customerPhone: String(d.customerPhone || "-"),
-                        shoeBrand: String(brandItem),
-                        shoeSize: String(sizeItem),
-                        shoeColor: String(colorItem),
-                        serviceMenu: String(menuItem),
-                        totalAmount: Number(d.totalAmount ?? d.paidAmount ?? firstItem.price ?? 0),
-                        paymentStatus: String(d.paymentStatus || d.paymentMethod || "LUNAS"),
-                        cashier: String(d.cashier || "-"),
-                        createdAt: tglStr
-                    });
-                });
-
+    itemsList.forEach((item) => {
+        allTransactions.push({
+            noTrx: String(d.noTrx || docSnap.id || "-"),
+            customerName: String(d.customerName || "-"),
+            customerPhone: String(d.customerPhone || "-"),
+            shoeBrand: String(item.brand || "-"),
+            shoeSize: String(item.size || "-"),
+            shoeColor: String(item.color || "-"),
+            serviceMenu: String(item.service || item.name || "-"),
+            totalAmount: Number(d.totalAmount ?? d.paidAmount ?? item.price ?? 0),
+            paymentStatus: String(d.paymentStatus || d.paymentMethod || "LUNAS"),
+            pickupStatus: String(d.pickupStatus || "BELUM DIAMBIL"),
+            cashier: String(d.cashier || "-"),
+            createdAt: tglStr
+        });
+    });
+});
                 // Kirim per batch isi 5 transaksi ke Google Sheets
                 const batchSize = 5;
                 for (let i = 0; i < allTransactions.length; i += batchSize) {
