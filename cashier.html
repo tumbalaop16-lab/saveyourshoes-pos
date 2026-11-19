@@ -578,24 +578,24 @@ try {
     }
 
     // TEMPEL DI SINI (mengambil detail sepatu dari array items jika ada)
-    let brandItem = d.items && d.items.length > 0 ? d.items[0].brand || "-" : "-";
-    let sizeItem = d.items && d.items.length > 0 ? d.items[0].size || "-" : "-";
-    let colorItem = d.items && d.items.length > 0 ? d.items[0].color || "-" : "-";
-    let menuItem = d.items && d.items.length > 0 ? d.items[0].name || "-" : "-";
+    const firstItem = Array.isArray(d.items) && d.items.length > 0 ? d.items[0] : {};
+let brandItem = firstItem.brand || "-";
+let sizeItem = firstItem.size || "-";
+let colorItem = firstItem.color || "-";
+let menuItem = firstItem.service || firstItem.name || "-";
 
-    allTransactions.push({
-        noTrx: String(d.noTrx || "-"),
-        customerName: String(d.customerName || "-"),
-        customerPhone: String(d.customerPhone || "-"),
-        shoeBrand: String(brandItem),
-        shoeSize: String(sizeItem),
-        shoeColor: String(colorItem),
-        serviceMenu: String(menuItem),
-        totalAmount: Number(d.totalAmount || 0),
-        paymentStatus: String(d.paymentStatus || "LUNAS"),
-        cashier: String(d.cashier || "-"),
-        createdAt: tglStr
-    });
+allTransactions.push({
+    noTrx: String(d.noTrx || docSnap.id || "-"),
+    customerName: String(d.customerName || "-"),
+    customerPhone: String(d.customerPhone || "-"),
+    shoeBrand: String(brandItem),
+    shoeSize: String(sizeItem),
+    shoeColor: String(colorItem),
+    serviceMenu: String(menuItem),
+    totalAmount: Number(d.totalAmount ?? d.paidAmount ?? firstItem.price ?? 0),
+    paymentStatus: String(d.paymentStatus || d.paymentMethod || "LUNAS"),
+    cashier: String(d.cashier || "-"),
+    createdAt: tglStr
 });
 
                 // Kirim per batch isi 5 transaksi ke Google Sheets
