@@ -228,13 +228,13 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, updateDoc, serverTimestamp, query, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, updateDoc, serverTimestamp, query, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMerqfzyxLNtW-U-kIP2s5ARaHsKOpEk8",
             authDomain: "saveyourshoes-pos.firebaseapp.com",
             projectId: "saveyourshoes-pos",
-            storageBucket: "saveyourshoes-pos.firebasestorage",
+            storageBucket: "saveyourshoes-pos.firebasestorage.app",
             messagingSenderId: "414855345556",
             appId: "1:414855345556:web:f049e8b69ae9aef3068b81"
         };
@@ -250,21 +250,19 @@
         let currentCategory = "SHOES";
         let cart = [];
 
-        // Fungsi Helper Kirim Data ke Google Sheets via GET Parameter (Anti CORS Tablet)
-        // GANTI DENGAN INI:
-async function kirimKeGoogleSheets(payload) {
-    await kirimKeGoogleSheets({
-    noTrx: noTrx,
-    customerName: custName,
-    customerPhone: custPhone,
-    shoeBrand: document.getElementById('input-shoe-brand').value || "-", // Sesuaikan id input di HTML Anda
-    shoeSize: document.getElementById('input-shoe-size').value || "-",
-    shoeColor: document.getElementById('input-shoe-color').value || "-",
-    serviceMenu: document.getElementById('input-service-menu').value || "-",
-    totalAmount: grandTotal,
-    paymentStatus: paymentStatus,
-    cashier: activeUserEmail
-});
+        // Fungsi Helper Kirim Data ke Google Sheets via POST (Anti CORS Tablet)
+        async function kirimKeGoogleSheets(payload) {
+            await fetch(SHEETS_WEBHOOK_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+            return { status: "success" };
+        }
+
         // Database Menu
         const menuData = {
             SHOES: [
@@ -406,7 +404,7 @@ async function kirimKeGoogleSheets(payload) {
                         <td class="p-2">${item.service}</td>
                         <td class="p-2 font-bold text-emerald-600">Rp ${item.price.toLocaleString('id-ID')}</td>
                         <td class="p-2 text-center">
-                            <button onclick="removeItem(${index})" class="text-red-500 hover:text-red-700 font-bold">X</button>
+                            <button type="button" onclick="removeItem(${index})" class="text-red-500 hover:text-red-700 font-bold">X</button>
                         </td>
                     </tr>
                 `;
@@ -452,7 +450,7 @@ async function kirimKeGoogleSheets(payload) {
             }
         }
 
-        // Submit Order & Print (Otomatis Sync ke Sheets)
+        // Submit Order & Print (Otomatis Sync ke Sheets beserta detail sepatu)
         document.getElementById('submit-order-btn').addEventListener('click', async () => {
             const custName = document.getElementById('cust-name').value.trim();
             const custPhone = document.getElementById('cust-phone').value.trim();
@@ -483,7 +481,7 @@ async function kirimKeGoogleSheets(payload) {
             btn.disabled = true;
             btn.textContent = "Menyimpan...";
 
-try {
+            try {
                 // 1. Simpan ke Firebase Firestore
                 await addDoc(collection(db, "transactions"), {
                     noTrx: noTrx,
@@ -501,16 +499,23 @@ try {
                     createdAt: serverTimestamp()
                 });
 
-                // 2. Kirim otomatis ke Google Sheets via GET Parameter (TEMPEL DI SINI)
+                // 2. Kirim otomatis ke Google Sheets (termasuk Brand, Size, Warna, Menu Layanan)
                 try {
-                    await kirimKeGoogleSheets({
+                    const sheetRows = cart.map(item => ({
                         noTrx: noTrx,
                         customerName: custName,
                         customerPhone: custPhone,
-                        totalAmount: grandTotal,
+                        shoeBrand: item.brand || "-",
+                        shoeSize: item.size || "-",
+                        shoeColor: item.color || "-",
+                        serviceMenu: item.service || "-",
+                        totalAmount: cart.length === 1 ? grandTotal : Number(item.price || 0),
                         paymentStatus: paymentStatus,
-                        cashier: activeUserEmail
-                    });
+                        cashier: activeUserEmail,
+                        createdAt: new Date().toISOString()
+                    }));
+
+                    await kirimKeGoogleSheets(sheetRows.length === 1 ? sheetRows[0] : sheetRows);
                 } catch (syncErr) {
                     console.error("Gagal sync ke Sheets:", syncErr);
                 }
@@ -549,7 +554,7 @@ try {
             }
         });
 
-// Tombol Migrasi Data Lama (Versi Paling Aman / Tanpa OrderBypass)
+        // Tombol Migrasi Data Lama
         document.getElementById('migrasi-btn').addEventListener('click', async () => {
             const konfirmasi = confirm("Tarik semua riwayat transaksi lama dari Firebase ke Google Sheets?");
             if (!konfirmasi) return;
@@ -559,51 +564,50 @@ try {
             btnMigrasi.textContent = "Memproses...";
 
             try {
-                // Ambil semua data tanpa orderBy agar tidak error jika ada field tanggal yang kosong
                 const querySnapshot = await getDocs(collection(db, "transactions"));
                 let allTransactions = [];
 
                 querySnapshot.forEach((docSnap) => {
-    const d = docSnap.data();
+                    const d = docSnap.data();
 
-    let tglStr = new Date().toISOString();
-    try {
-        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
-            tglStr = d.createdAt.toDate().toISOString();
-        } else if (d.createdAt) {
-            tglStr = new Date(d.createdAt).toISOString();
-        }
-    } catch (e) {
-        tglStr = new Date().toISOString();
-    }
+                    let tglStr = new Date().toISOString();
+                    try {
+                        if (d.createdAt && typeof d.createdAt.toDate === 'function') {
+                            tglStr = d.createdAt.toDate().toISOString();
+                        } else if (d.createdAt) {
+                            tglStr = new Date(d.createdAt).toISOString();
+                        }
+                    } catch (e) {
+                        tglStr = new Date().toISOString();
+                    }
 
-    // TEMPEL DI SINI (mengambil detail sepatu dari array items jika ada)
-    const firstItem = Array.isArray(d.items) && d.items.length > 0 ? d.items[0] : {};
-let brandItem = firstItem.brand || "-";
-let sizeItem = firstItem.size || "-";
-let colorItem = firstItem.color || "-";
-let menuItem = firstItem.service || firstItem.name || "-";
+                    const firstItem = Array.isArray(d.items) && d.items.length > 0 ? d.items[0] : {};
+                    const brandItem = firstItem.brand || "-";
+                    const sizeItem = firstItem.size || "-";
+                    const colorItem = firstItem.color || "-";
+                    const menuItem = firstItem.service || firstItem.name || "-";
 
-allTransactions.push({
-    noTrx: String(d.noTrx || docSnap.id || "-"),
-    customerName: String(d.customerName || "-"),
-    customerPhone: String(d.customerPhone || "-"),
-    shoeBrand: String(brandItem),
-    shoeSize: String(sizeItem),
-    shoeColor: String(colorItem),
-    serviceMenu: String(menuItem),
-    totalAmount: Number(d.totalAmount ?? d.paidAmount ?? firstItem.price ?? 0),
-    paymentStatus: String(d.paymentStatus || d.paymentMethod || "LUNAS"),
-    cashier: String(d.cashier || "-"),
-    createdAt: tglStr
-});
+                    allTransactions.push({
+                        noTrx: String(d.noTrx || docSnap.id || "-"),
+                        customerName: String(d.customerName || "-"),
+                        customerPhone: String(d.customerPhone || "-"),
+                        shoeBrand: String(brandItem),
+                        shoeSize: String(sizeItem),
+                        shoeColor: String(colorItem),
+                        serviceMenu: String(menuItem),
+                        totalAmount: Number(d.totalAmount ?? d.paidAmount ?? firstItem.price ?? 0),
+                        paymentStatus: String(d.paymentStatus || d.paymentMethod || "LUNAS"),
+                        cashier: String(d.cashier || "-"),
+                        createdAt: tglStr
+                    });
+                });
 
                 // Kirim per batch isi 5 transaksi ke Google Sheets
                 const batchSize = 5;
                 for (let i = 0; i < allTransactions.length; i += batchSize) {
                     const batch = allTransactions.slice(i, i + batchSize);
                     btnMigrasi.textContent = `Mengirim ${Math.min(i + batchSize, allTransactions.length)}/${allTransactions.length}...`;
-                    
+
                     try {
                         await kirimKeGoogleSheets(batch);
                     } catch (batchErr) {
@@ -620,152 +624,125 @@ allTransactions.push({
                 btnMigrasi.textContent = "Tarik Data Lama ke Sheets";
             }
         });
-        // Tombol Cetak Ulang Berdasarkan Nama Customer
-        document.getElementById('reprint-btn').addEventListener('click', async () => {
-            const searchName = document.getElementById('reprint-cust-name').value.trim();
-            if (!searchName) {
-                alert("Masukkan nama pelanggan yang ingin dicari!");
-                return;
-            }
 
-            try {
-                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
+        // Fungsi Helper Cetak Struk Thermal 58mm
+        function cetakStrukNota(trx) {
+            document.getElementById('rec-notrx').textContent = trx.noTrx || "-";
+            const tgl = trx.createdAt && typeof trx.createdAt.toDate === 'function'
+                ? trx.createdAt.toDate().toLocaleString('id-ID')
+                : new Date().toLocaleString('id-ID');
+            document.getElementById('rec-date').textContent = tgl;
+            document.getElementById('rec-cust').textContent = trx.customerName || "-";
+            document.getElementById('rec-phone').textContent = trx.customerPhone || "-";
+            document.getElementById('rec-cashier').textContent = trx.cashier || "-";
+            document.getElementById('rec-method').textContent = trx.paymentMethod || "-";
 
-                let foundData = null;
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
-                        foundData = data;
-                    }
-                });
+            const itemsHtml = (trx.items || []).map(it => {
+                const detail = it.size && it.size !== '-' ? `${it.brand} (${it.color}, Sz ${it.size})` : `${it.brand} (${it.color})`;
+                return `<div>- ${it.service}: ${detail} (Rp ${Number(it.price || 0).toLocaleString('id-ID')})</div>`;
+            }).join('');
+            document.getElementById('rec-items').innerHTML = itemsHtml;
 
-                if (!foundData) {
-                    alert(`Tidak ditemukan transaksi atas nama "${searchName}"!`);
-                    return;
-                }
+            const total = Number(trx.totalAmount || 0);
+            const paid = Number(trx.paidAmount || 0);
+            const rem = Number(trx.remainingAmount || 0);
+            const change = Number(trx.changeAmount || 0);
 
-                cetakStrukNota(foundData);
-            } catch (err) {
-                console.error("Gagal cetak ulang:", err);
-                alert("Terjadi kesalahan saat mencari data.");
-            }
-        });
+            document.getElementById('rec-total').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            document.getElementById('rec-pay').textContent = `Rp ${paid.toLocaleString('id-ID')}`;
 
-        // Tombol Pelunasan & Pengambilan Cucian
-        document.getElementById('cari-pelunasan-btn').addEventListener('click', async () => {
-            const searchName = document.getElementById('pelunasan-cust-name').value.trim();
-            if (!searchName) {
-                alert("Masukkan nama pelanggan untuk pelunasan!");
-                return;
-            }
-
-            try {
-                const q = query(collection(db, "transactions"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-
-                let foundDocId = null;
-                let foundData = null;
-
-                querySnapshot.forEach((docSnap) => {
-                    const data = docSnap.data();
-                    if (!foundData && data.customerName && data.customerName.toLowerCase().includes(searchName.toLowerCase())) {
-                        foundDocId = docSnap.id;
-                        foundData = data;
-                    }
-                });
-
-                if (!foundData) {
-                    alert(`Tidak ditemukan data atas nama "${searchName}"!`);
-                    return;
-                }
-
-                if (foundData.paymentStatus === "LUNAS") {
-                    alert(`Transaksi atas nama ${foundData.customerName} sudah berstatus LUNAS.`);
-                    cetakStrukNota(foundData);
-                    return;
-                }
-
-                const sisaTagihan = foundData.remainingAmount || 0;
-                const konfirmasi = confirm(`Pelanggan: ${foundData.customerName}\nSisa Belum Dibayar: Rp ${sisaTagihan.toLocaleString('id-ID')}\n\nTekan OK untuk melunasi.`);
-                
-                if (konfirmasi) {
-                    const bayarInput = prompt(`Masukkan jumlah uang pelunasan:`, sisaTagihan);
-                    if (bayarInput === null) return;
-
-                    const bayarBaru = Number(bayarInput) || 0;
-                    const totalBayar = foundData.paidAmount + bayarBaru;
-                    const sisaBaru = foundData.totalAmount - totalBayar;
-                    const statusBaru = sisaBaru <= 0 ? "LUNAS" : "BELUM LUNAS (DP)";
-                    const kembalianBaru = sisaBaru < 0 ? Math.abs(sisaBaru) : 0;
-
-                    const trxRef = doc(db, "transactions", foundDocId);
-                    await updateDoc(trxRef, {
-                        paidAmount: totalBayar,
-                        remainingAmount: sisaBaru < 0 ? 0 : sisaBaru,
-                        changeAmount: kembalianBaru,
-                        paymentStatus: statusBaru
-                    });
-
-                    foundData.paidAmount = totalBayar;
-                    foundData.remainingAmount = sisaBaru < 0 ? 0 : sisaBaru;
-                    foundData.changeAmount = kembalianBaru;
-                    foundData.paymentStatus = statusBaru;
-
-                    // Sync status pelunasan terbaru ke Google Sheets juga
-                    fetch(SHEETS_WEBHOOK_URL, {
-                        method: 'POST',
-                        mode: 'no-cors',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            noTrx: foundData.noTrx,
-                            customerName: foundData.customerName,
-                            customerPhone: foundData.customerPhone,
-                            totalAmount: foundData.totalAmount,
-                            paymentStatus: statusBaru,
-                            cashier: foundData.cashier || activeUserEmail
-                        })
-                    }).catch(err => console.log("Gagal sync pelunasan ke Sheets:", err));
-
-                    alert("Pelunasan Berhasil Disimpan & Disinkronkan!");
-                    cetakStrukNota(foundData);
-                }
-
-            } catch (err) {
-                console.error("Gagal proses pelunasan:", err);
-                alert("Terjadi kesalahan saat memproses pelunasan.");
-            }
-        });
-
-        // Fungsi Universal Cetak Struk
-        function cetakStrukNota(trxData) {
-            document.getElementById('rec-notrx').textContent = trxData.noTrx || "SYS-POS";
-            document.getElementById('rec-date').textContent = trxData.createdAt && trxData.createdAt.toDate ? trxData.createdAt.toDate().toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
-            document.getElementById('rec-cust').textContent = trxData.customerName || "-";
-            document.getElementById('rec-phone').textContent = trxData.customerPhone || "-";
-            document.getElementById('rec-cashier').textContent = trxData.cashier ? trxData.cashier.split('@')[0] : '-';
-            document.getElementById('rec-method').textContent = trxData.paymentMethod || "Cash";
-            document.getElementById('rec-total').textContent = `Rp ${Number(trxData.totalAmount || 0).toLocaleString('id-ID')}`;
-            document.getElementById('rec-pay').textContent = `Rp ${Number(trxData.paidAmount || 0).toLocaleString('id-ID')}`;
-
-            if ((trxData.paidAmount || 0) >= (trxData.totalAmount || 0)) {
-                document.getElementById('label-rec-rem').textContent = "KEMBALIAN";
-                document.getElementById('rec-rem').textContent = `Rp ${Number(trxData.changeAmount || 0).toLocaleString('id-ID')}`;
-            } else {
+            if (rem > 0) {
                 document.getElementById('label-rec-rem').textContent = "SISA BAYAR";
-                document.getElementById('rec-rem').textContent = `Rp ${Number(trxData.remainingAmount || 0).toLocaleString('id-ID')}`;
+                document.getElementById('rec-rem').textContent = `Rp ${rem.toLocaleString('id-ID')}`;
+            } else {
+                document.getElementById('label-rec-rem').textContent = "KEMBALIAN ";
+                document.getElementById('rec-rem').textContent = `Rp ${change.toLocaleString('id-ID')}`;
             }
-            document.getElementById('rec-status').textContent = trxData.paymentStatus || "LUNAS";
+            document.getElementById('rec-status').textContent = trx.paymentStatus || "LUNAS";
 
-            if (trxData.items && Array.isArray(trxData.items)) {
-                document.getElementById('rec-items').innerHTML = trxData.items.map((i, idx) => {
-                    const desc = i.category === 'SHOES' ? `${i.brand} (${i.color}, Sz ${i.size})` : `${i.brand} (${i.color})`;
-                    return `<div style="margin-bottom: 2px;">#${idx+1} [${i.category}] ${desc}<br>&nbsp;&nbsp;${i.service} = Rp ${Number(i.price).toLocaleString('id-ID')}</div>`;
-                }).join('');
-            }
-
-            window.print();
+            setTimeout(() => window.print(), 200);
         }
+
+        // Fitur 1: Cetak Ulang Nota via Nama
+        document.getElementById('reprint-btn').addEventListener('click', async () => {
+            const keyword = document.getElementById('reprint-cust-name').value.trim().toLowerCase();
+            if (!keyword) {
+                alert("Masukkan nama pelanggan terlebih dahulu!");
+                return;
+            }
+            try {
+                const snap = await getDocs(collection(db, "transactions"));
+                const matches = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if ((data.customerName || "").toLowerCase().includes(keyword)) {
+                        matches.push({ id: docSnap.id, ...data });
+                    }
+                });
+                if (matches.length === 0) {
+                    alert("Transaksi pelanggan tidak ditemukan.");
+                    return;
+                }
+                matches.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                cetakStrukNota(matches[0]);
+            } catch (err) {
+                console.error(err);
+                alert("Gagal mencari transaksi: " + err.message);
+            }
+        });
+
+        // Fitur 2: Pelunasan & Pengambilan Cucian
+        document.getElementById('cari-pelunasan-btn').addEventListener('click', async () => {
+            const keyword = document.getElementById('pelunasan-cust-name').value.trim().toLowerCase();
+            if (!keyword) {
+                alert("Masukkan nama pelanggan terlebih dahulu!");
+                return;
+            }
+            try {
+                const snap = await getDocs(collection(db, "transactions"));
+                const matches = [];
+                snap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    if ((data.customerName || "").toLowerCase().includes(keyword)) {
+                        matches.push({ id: docSnap.id, ...data });
+                    }
+                });
+                if (matches.length === 0) {
+                    alert("Data pelanggan tidak ditemukan.");
+                    return;
+                }
+                matches.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+                const trx = matches[0];
+
+                if (trx.paymentStatus === "LUNAS" && Number(trx.remainingAmount || 0) === 0) {
+                    alert(`Transaksi ${trx.noTrx} atas nama ${trx.customerName} sudah LUNAS.`);
+                    return;
+                }
+
+                const sisa = Number(trx.remainingAmount || (Number(trx.totalAmount || 0) - Number(trx.paidAmount || 0)));
+                const konfirmasi = confirm(`Pelanggan: ${trx.customerName} (${trx.noTrx})\nSisa Tagihan: Rp ${sisa.toLocaleString('id-ID')}\n\nLunasi sekarang dan cetak struk lunas?`);
+                if (!konfirmasi) return;
+
+                const total = Number(trx.totalAmount || 0);
+                await updateDoc(doc(db, "transactions", trx.id), {
+                    paidAmount: total,
+                    remainingAmount: 0,
+                    paymentStatus: "LUNAS"
+                });
+
+                const updatedTrx = {
+                    ...trx,
+                    paidAmount: total,
+                    remainingAmount: 0,
+                    paymentStatus: "LUNAS"
+                };
+                cetakStrukNota(updatedTrx);
+                alert("Pelunasan berhasil dicatat!");
+            } catch (err) {
+                console.error(err);
+                alert("Gagal memproses pelunasan: " + err.message);
+            }
+        });
     </script>
 </body>
 </html>
